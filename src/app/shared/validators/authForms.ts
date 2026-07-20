@@ -7,6 +7,7 @@ export const loginForm = new FormGroup({
       Validators.email]),
   
     password: new FormControl('',[
+      Validators.required,
       Validators.minLength(8),
       Validators.pattern(/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).+$/)
     ])

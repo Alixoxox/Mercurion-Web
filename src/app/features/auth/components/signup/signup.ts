@@ -4,10 +4,12 @@ import { Router, RouterLink } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { signupForm } from '../../../../shared/validators/authForms';
 import { UserService } from '../../../../core/services/user.service';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-signup',
-  imports: [ReactiveFormsModule, RouterLink],
+  standalone: true,
+  imports: [ReactiveFormsModule, CommonModule,RouterLink],
   templateUrl: './signup.html',
 })
 export class Signup {
@@ -20,14 +22,18 @@ export class Signup {
       return;
     }
     const formValue = this.signupForm.value;
-
-    this.userService.add({
+    let s={
       id:0,
       name: formValue.name!,
       email: formValue.email!,
       password: formValue.password!,
-    });
+      cart: []
+    }
+    this.userService.add(s);
+    this.userService.currentUser.set(s);
     this.userService.loggedIn.set(true);
+    localStorage.setItem('loggedIn', 'true');
+    localStorage.setItem('loggedInUser', JSON.stringify(s));
     this.router.navigate(['/products']);
   }
 }

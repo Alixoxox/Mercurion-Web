@@ -18,4 +18,8 @@ export class ProductService {
   getCategories(): Observable<string[]> {
     return this.http.get<string[]>('https://fakestoreapi.com/products/categories');
   }
+
+  getByCategory(category: string): Observable<Product[]> {
+    return this.http.get<Product[]>(`https://fakestoreapi.com/products/category/${category}`);
+  }
 }
