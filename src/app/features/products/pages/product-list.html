@@ -6,8 +6,8 @@
     </span>
   </div>
 
-  <div class="flex flex-col sm:flex-row gap-3 mb-6">
-    <div class="relative flex-1">
+  <div class="flex flex-wrap items-center gap-2 mb-6">
+    <div class="relative w-full sm:flex-1 sm:w-auto">
       <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
         <svg class="w-4 h-4 text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
           <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
@@ -18,8 +18,8 @@
              placeholder="Search products..." [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event); onFilterChange()" />
     </div>
 
-    <div class="relative inline-block" (mouseenter)="categoryOpen.set(true)" (mouseleave)="categoryOpen.set(false)">
-      <button type="button" class="inline-flex items-center justify-between px-3 py-2 font-medium text-gray-700 transition-all duration-500 rounded-md border border-gray-300 bg-gray-50 min-w-[160px] text-sm">
+    <div class="relative inline-block shrink-0" (mouseenter)="categoryOpen.set(true)" (mouseleave)="categoryOpen.set(false)">
+      <button type="button" class="inline-flex items-center justify-between gap-1 px-2 sm:px-3 py-2 font-medium text-gray-700 transition-all duration-500 rounded-md border border-gray-300 bg-gray-50 text-xs sm:text-sm">
         <span class="flex-shrink-0">{{ selectedCategory() || 'All Categories' }}</span>
         <svg fill="currentColor" viewBox="0 0 20 20" class="flex-shrink-0 w-5 h-5 ml-1">
           <path [class.rotate-180]="categoryOpen()" class="transition duration-300 ease-in-out origin-center transform" fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path>
@@ -42,8 +42,8 @@
       </div>
     </div>
 
-    <div class="relative inline-block" (mouseenter)="sortOpen.set(true)" (mouseleave)="sortOpen.set(false)">
-      <button type="button" class="inline-flex items-center justify-between px-3 py-2 font-medium text-gray-700 transition-all duration-500 rounded-md border border-gray-300 bg-gray-50 min-w-[160px] text-sm">
+    <div class="relative inline-block shrink-0" (mouseenter)="sortOpen.set(true)" (mouseleave)="sortOpen.set(false)">
+      <button type="button" class="inline-flex items-center justify-between gap-1 px-2 sm:px-3 py-2 font-medium text-gray-700 transition-all duration-500 rounded-md border border-gray-300 bg-gray-50 text-xs sm:text-sm">
         <span class="flex-shrink-0">{{ getSortLabel() }}</span>
         <svg fill="currentColor" viewBox="0 0 20 20" class="flex-shrink-0 w-5 h-5 ml-1">
           <path [class.rotate-180]="sortOpen()" class="transition duration-300 ease-in-out origin-center transform" fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path>
