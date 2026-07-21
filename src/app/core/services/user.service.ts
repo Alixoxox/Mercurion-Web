@@ -9,11 +9,12 @@ export class UserService {
   users: user[] = []
   loggedIn = signal(false);
   constructor() {
-    const loggedIn = localStorage.getItem('loggedIn') === 'true';
+    this.getUsers();
+    const loggedIn = localStorage.getItem('loggedIn') === 'true'; //ts status
     if (loggedIn) {
       this.loggedIn.set(true);
       try {
-        const saved = JSON.parse(localStorage.getItem('loggedInUser') || 'null');
+        const saved = JSON.parse(localStorage.getItem('loggedInUser') || 'null'); //ts info bout user
         if (saved) this.currentUser.set(saved);
       } catch {}
     }
@@ -56,6 +57,7 @@ export class UserService {
       this.users[idx] = updated;
     }
     localStorage.setItem('users', JSON.stringify(this.users));
+    localStorage.setItem('loggedInUser', JSON.stringify(updated));
 
 }
   deleteFromCart(productId: number) {
@@ -70,7 +72,8 @@ export class UserService {
   if(idx !== -1){
     this.users[idx] = updated;
   }
-  localStorage.setItem('users', JSON.stringify(this.users));
+      localStorage.setItem('users', JSON.stringify(this.users));
+    localStorage.setItem('loggedInUser', JSON.stringify(updated));
 }
 
   removeOneFromCart(productId: number) {
@@ -87,6 +90,7 @@ export class UserService {
       this.users[userIdx] = updated;
     }
     localStorage.setItem('users', JSON.stringify(this.users));
+    localStorage.setItem('loggedInUser', JSON.stringify(updated));
   }
 
   clearCart() {
@@ -99,6 +103,16 @@ export class UserService {
       this.users[userIdx] = updated;
     }
     localStorage.setItem('users', JSON.stringify(this.users));
+    localStorage.setItem('loggedInUser',JSON.stringify(this.currentUser));
+  }
+
+  generateOrderNumber(): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = 'ORD-';
+    for (let i = 0; i < 8; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
   }
 
   logout() {

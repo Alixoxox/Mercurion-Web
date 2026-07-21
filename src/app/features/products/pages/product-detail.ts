@@ -25,8 +25,11 @@ export class ProductDetail implements OnInit {
   relatedLoading = signal(false);
   error = signal<string | null>(null);
 
+  private readonly MIN_LOADING_MS = 800;
+
   ngOnInit(): void {
     const id = Number(this.route.snapshot.paramMap.get("id"));
+    const startTime = Date.now();
 
     if (!id) {
       this.error.set("Product not found.");
@@ -37,16 +40,22 @@ export class ProductDetail implements OnInit {
     this.productService.getById(id).subscribe({
       next: (data) => {
         this.product.set(data ?? null);
-        this.loading.set(false);
+        this.delayLoadingDone(startTime);
         if (data) {
           this.loadRelated(data.category);
         }
       },
       error: () => {
         this.error.set("Failed to load product. Please try again.");
-        this.loading.set(false);
+        this.delayLoadingDone(startTime);
       },
     });
+  }
+
+  private delayLoadingDone(startTime: number): void {
+    const elapsed = Date.now() - startTime;
+    const remaining = Math.max(0, this.MIN_LOADING_MS - elapsed);
+    setTimeout(() => this.loading.set(false), remaining);
   }
 
   private loadRelated(category: string): void {

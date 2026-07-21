@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
@@ -12,13 +12,9 @@ import { CommonModule } from '@angular/common';
   imports: [ReactiveFormsModule, CommonModule, RouterLink],
   templateUrl: './login.html',
 })
-export class Login implements OnInit {
+export class Login {
   
   constructor(public userService:UserService, public toastr: ToastrService, public router: Router) {}
-  ngOnInit(): void {
-    this.userService.getUsers()
-    console.log(this.userService.users)
-  }
   loginForm = loginForm;
   onLogin() {
     const email = this.loginForm.get('email')?.value;
@@ -32,7 +28,6 @@ export class Login implements OnInit {
       this.userService.loggedIn.set(true);
       this.userService.currentUser.set(user);
       localStorage.setItem('loggedIn', 'true');
-      localStorage.setItem('loggedInUser', JSON.stringify(user));
       this.toastr.success('Login successful');
       this.router.navigate(['/products']);
     } else {

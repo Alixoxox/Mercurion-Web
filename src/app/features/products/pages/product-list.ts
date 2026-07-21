@@ -6,11 +6,12 @@ import { CommonModule } from "@angular/common";
 import { Router } from "@angular/router";
 import { UserService } from "src/app/core/services/user.service";
 import { ToastrService } from "ngx-toastr";
+import { FormsModule } from "@angular/forms";
 
 @Component({
   selector: "app-product-list",
   standalone: true,
-  imports: [CommonModule, ProductCard],
+  imports: [CommonModule, ProductCard, FormsModule],
   templateUrl: "./product-list.html",
 })
 export class ProductList implements OnInit {
@@ -22,24 +23,102 @@ export class ProductList implements OnInit {
   products = signal<Product[]>([]);
   loading = signal(true);
   error = signal<string | null>(null);
+
+  searchTerm = signal('');
+  selectedCategory = signal<string | null>(null);
+  sortBy = signal('default');
+  currentPage = signal(1);
+  categories = signal<string[]>([]);
+  categoryOpen = signal(false);
+  sortOpen = signal(false);
+
+  sortOptions = [
+    { value: 'default', label: 'Default' },
+    { value: 'price-asc', label: 'Price: Low to High' },
+    { value: 'price-desc', label: 'Price: High to Low' },
+    { value: 'name-asc', label: 'Name: A-Z' },
+    { value: 'name-desc', label: 'Name: Z-A' },
+  ];
+
   totalSpent = computed(() => {
     const user = this.userService.currentUser();
     if (!user) return 0;
     return user.cart.reduce((sum, item) => sum + item.price, 0);
   });
 
+  filteredProducts = computed(() => {
+    return this.products().filter(p => {
+      const matchesSearch = !this.searchTerm() || p.title.toLowerCase().includes(this.searchTerm().toLowerCase());
+      const matchesCategory = !this.selectedCategory() || p.category === this.selectedCategory();
+      return matchesSearch && matchesCategory;
+    });
+  });
+
+  sortedProducts = computed(() => {
+    const sorted = [...this.filteredProducts()];
+    switch (this.sortBy()) {
+      case 'price-asc': return sorted.sort((a, b) => a.price - b.price);
+      case 'price-desc': return sorted.sort((a, b) => b.price - a.price);
+      case 'name-asc': return sorted.sort((a, b) => a.title.localeCompare(b.title));
+      case 'name-desc': return sorted.sort((a, b) => b.title.localeCompare(a.title));
+      default: return sorted;
+    }
+  });
+
+  totalPages = computed(() => Math.max(1, Math.ceil(this.sortedProducts().length / this.PAGE_SIZE)));
+
+  paginatedProducts = computed(() => {
+    const start = (this.currentPage() - 1) * this.PAGE_SIZE;
+    return this.sortedProducts().slice(start, start + this.PAGE_SIZE);
+  });
+
+  readonly PAGE_SIZE = 8;
+  private readonly MIN_LOADING_MS = 800;
+
   ngOnInit(): void {
     localStorage.getItem('loggedIn') === 'true' ? this.userService.loggedIn.set(true) : this.userService.loggedIn.set(false)
+    const startTime = Date.now();
     this.productService.getAll().subscribe({
       next: (data) => {
         this.products.set(data);
-        this.loading.set(false);
+        this.delayLoadingDone(startTime);
       },
       error: () => {
         this.error.set("Failed to load products. Please try again.");
-        this.loading.set(false);
+        this.delayLoadingDone(startTime);
       },
     });
+
+    this.productService.getCategories().subscribe({
+      next: (data) => this.categories.set(data),
+    });
+  }
+
+  private delayLoadingDone(startTime: number): void {
+    const elapsed = Date.now() - startTime;
+    const remaining = Math.max(0, this.MIN_LOADING_MS - elapsed);
+    setTimeout(() => this.loading.set(false), remaining);
+  }
+
+  onFilterChange(): void {
+    this.currentPage.set(1);
+  }
+
+  clearFilters(): void {
+    this.searchTerm.set('');
+    this.selectedCategory.set(null);
+    this.sortBy.set('default');
+    this.currentPage.set(1);
+  }
+
+  getSortLabel(): string {
+    return this.sortOptions.find(o => o.value === this.sortBy())?.label || 'Default';
+  }
+
+  goToPage(page: number): void {
+    if (page >= 1 && page <= this.totalPages()) {
+      this.currentPage.set(page);
+    }
   }
 
   onAddToCart(product: Product): void {
@@ -54,9 +133,7 @@ export class ProductList implements OnInit {
 
   isInCart(product: Product): boolean {
     const user = this.userService.currentUser();
-  
     if (!user) return false;
-  
     return user.cart.some(item => item.id === product.id);
   }
 

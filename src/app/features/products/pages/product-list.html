@@ -6,13 +6,79 @@
     </span>
   </div>
 
-  <div *ngIf="loading()" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-    <div *ngFor="let _ of [1,2,3,4,5,6,7,8]" class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden animate-pulse h-full flex flex-col">
-      <div class="aspect-square bg-gray-100 shrink-0"></div>
-      <div class="p-4 space-y-3 flex-1 flex flex-col">
-        <div class="h-4 bg-gray-100 rounded w-1/4"></div>
-        <div class="h-4 bg-gray-100 rounded w-3/4"></div>
-        <div class="h-5 bg-gray-100 rounded w-1/3 mt-auto"></div>
+  <div class="flex flex-col sm:flex-row gap-3 mb-6">
+    <div class="relative flex-1">
+      <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
+        <svg class="w-4 h-4 text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+          <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
+        </svg>
+      </div>
+      <input type="search" id="search"
+             class="block w-full ps-9 pe-3 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400"
+             placeholder="Search products..." [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event); onFilterChange()" />
+    </div>
+
+    <div class="relative inline-block" (mouseenter)="categoryOpen.set(true)" (mouseleave)="categoryOpen.set(false)">
+      <button type="button" class="inline-flex items-center justify-between px-3 py-2 font-medium text-gray-700 transition-all duration-500 rounded-md border border-gray-300 bg-gray-50 min-w-[160px] text-sm">
+        <span class="flex-shrink-0">{{ selectedCategory() || 'All Categories' }}</span>
+        <svg fill="currentColor" viewBox="0 0 20 20" class="flex-shrink-0 w-5 h-5 ml-1">
+          <path [class.rotate-180]="categoryOpen()" class="transition duration-300 ease-in-out origin-center transform" fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+        </svg>
+      </button>
+      <div *ngIf="categoryOpen()" class="absolute pt-2 z-10">
+        <div class="relative py-1 bg-white border border-gray-200 rounded-md shadow-xl">
+          <div class="absolute top-0 w-3 h-3 origin-center transform rotate-45 translate-x-5 -translate-y-1.5 bg-white border-t border-l border-gray-200 rounded-sm pointer-events-none"></div>
+          <div class="relative">
+            <button (click)="selectedCategory.set(null); onFilterChange(); categoryOpen.set(false)"
+                    class="block w-full px-4 py-2 font-medium text-gray-700 whitespace-nowrap hover:bg-gray-100 hover:text-gray-900 transition duration-300 ease-in-out text-left text-sm">
+              All Categories
+            </button>
+            <button *ngFor="let cat of categories()" (click)="selectedCategory.set(cat); onFilterChange(); categoryOpen.set(false)"
+                    class="block w-full px-4 py-2 font-medium text-gray-700 whitespace-nowrap hover:bg-gray-100 hover:text-gray-900 transition duration-300 ease-in-out text-left text-sm">
+              {{ cat }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="relative inline-block" (mouseenter)="sortOpen.set(true)" (mouseleave)="sortOpen.set(false)">
+      <button type="button" class="inline-flex items-center justify-between px-3 py-2 font-medium text-gray-700 transition-all duration-500 rounded-md border border-gray-300 bg-gray-50 min-w-[160px] text-sm">
+        <span class="flex-shrink-0">{{ getSortLabel() }}</span>
+        <svg fill="currentColor" viewBox="0 0 20 20" class="flex-shrink-0 w-5 h-5 ml-1">
+          <path [class.rotate-180]="sortOpen()" class="transition duration-300 ease-in-out origin-center transform" fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+        </svg>
+      </button>
+      <div *ngIf="sortOpen()" class="absolute pt-2 z-10">
+        <div class="relative py-1 bg-white border border-gray-200 rounded-md shadow-xl">
+          <div class="absolute top-0 w-3 h-3 origin-center transform rotate-45 translate-x-5 -translate-y-1.5 bg-white border-t border-l border-gray-200 rounded-sm pointer-events-none"></div>
+          <div class="relative">
+            <button *ngFor="let opt of sortOptions" (click)="sortBy.set(opt.value); onFilterChange(); sortOpen.set(false)"
+                    class="block w-full px-4 py-2 font-medium text-gray-700 whitespace-nowrap hover:bg-gray-100 hover:text-gray-900 transition duration-300 ease-in-out text-left text-sm">
+              {{ opt.label }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="loading()">
+    <div class="flex items-center justify-center gap-3 mb-6">
+      <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      <span class="text-sm text-gray-500 font-medium">Loading products...</span>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div *ngFor="let _ of [1,2,3,4,5,6,7,8]" class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden animate-pulse h-full flex flex-col">
+        <div class="aspect-square bg-gray-100 shrink-0"></div>
+        <div class="p-4 space-y-3 flex-1 flex flex-col">
+          <div class="h-4 bg-gray-100 rounded w-1/4"></div>
+          <div class="h-4 bg-gray-100 rounded w-3/4"></div>
+          <div class="h-5 bg-gray-100 rounded w-1/3 mt-auto"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -29,13 +95,36 @@
     <p class="text-gray-500 text-lg">No products found.</p>
   </div>
 
-  <div *ngIf="!loading() && !error() && products().length > 0"
-       class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-    <app-product-card *ngFor="let product of products()" 
-    [product]="product" 
-    [isLoggedIn]="userService.loggedIn()"
-    [isInCart]="isInCart(product)"
-    (addToCart)="onAddToCart($event)"
-    (deleteFromCart)="deleteFromCart($event)"/> 
+  <div *ngIf="!loading() && !error() && products().length > 0 && sortedProducts().length === 0" class="text-center py-16">
+    <p class="text-gray-500 text-lg mb-4">No products match your filters.</p>
+    <button (click)="clearFilters()"
+            class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition cursor-pointer">
+      Clear Filters
+    </button>
+  </div>
+
+  <div *ngIf="!loading() && !error() && sortedProducts().length > 0">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <app-product-card *ngFor="let product of paginatedProducts() "
+      [product]="product"
+      [isLoggedIn]="userService.loggedIn()"
+      [isInCart]="isInCart(product)"
+      (addToCart)="onAddToCart($event)"
+      (deleteFromCart)="deleteFromCart($event)"/>
+    </div>
+
+    <div class="flex items-center justify-center gap-4 mt-8">
+      <button (click)="goToPage(currentPage() - 1)" [disabled]="currentPage() === 1"
+              class="px-4 py-2 text-sm font-medium rounded-lg transition cursor-pointer
+                     bg-gray-100 hover:bg-gray-200 text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
+        &larr; Previous
+      </button>
+      <span class="text-sm text-gray-600 font-medium">Page {{ currentPage() }} of {{ totalPages() }}</span>
+      <button (click)="goToPage(currentPage() + 1)" [disabled]="currentPage() === totalPages()"
+              class="px-4 py-2 text-sm font-medium rounded-lg transition cursor-pointer
+                     bg-gray-100 hover:bg-gray-200 text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
+        Next &rarr;
+      </button>
+    </div>
   </div>
 </div>

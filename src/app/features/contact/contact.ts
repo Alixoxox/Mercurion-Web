@@ -13,7 +13,7 @@ import { Component } from '@angular/core';
       </div>
 
       <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-        <form action="#" method="POST">
+        <form action="" method="POST">
           <div class="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2">
             <div>
               <label for="first-name" class="block text-sm font-semibold text-gray-900">First name</label>
