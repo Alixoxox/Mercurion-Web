@@ -11,7 +11,7 @@ export class Footer {
   constructor(private toastr: ToastrService) {}
 
   newsForm = new FormGroup({
-    email: new FormControl('', [Validators.email]),
+    email: new FormControl('', [Validators.required,Validators.email]),
   });
 
   onSubmit(): void {

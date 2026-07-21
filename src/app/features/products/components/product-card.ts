@@ -11,9 +11,9 @@ import { Product } from "../../../shared/models/product";
   template: `
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition group h-full flex flex-col">
       <a [routerLink]="['/products', product.id]" class="flex-1 flex flex-col">
-        <div class="aspect-square p-6 flex items-center justify-center bg-white">
-          <img [src]="product.image" [alt]="product.title"
-               class="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300" />
+        <div class="aspect-square p-4 sm:p-6 flex items-center justify-center bg-white">
+          <img [src]="product.image" [alt]="product.title" loading="lazy"
+               class="w-full h-full object-contain object-center group-hover:scale-105 transition-transform duration-300" />
         </div>
         <div class="p-4 border-t border-gray-100 flex-1 flex flex-col">
           <span class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded self-start">
