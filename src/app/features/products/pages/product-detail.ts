@@ -1,5 +1,5 @@
-import { Component, OnInit, inject, signal } from "@angular/core";
-import { ActivatedRoute, Router, RouterLink } from "@angular/router";
+import { Component, OnChanges, SimpleChanges, inject, signal, Input } from "@angular/core";
+import { Router, RouterLink } from "@angular/router";
 import { ProductService } from "../../../core/services/product.service";
 import { UserService } from "../../../core/services/user.service";
 import { Product } from "../../../shared/models/product";
@@ -13,8 +13,8 @@ import { ToastrService } from "ngx-toastr";
   imports: [CommonModule, RouterLink, ProductCard],
   templateUrl: "./product-detail.html",
 })
-export class ProductDetail implements OnInit {
-  private route = inject(ActivatedRoute);
+export class ProductDetail implements OnChanges {
+  @Input() id?: string;
   private router = inject(Router);
   private productService = inject(ProductService);
   public userService = inject(UserService);
@@ -24,18 +24,26 @@ export class ProductDetail implements OnInit {
   loading = signal(true);
   relatedLoading = signal(false);
   error = signal<string | null>(null);
-
   private readonly MIN_LOADING_MS = 800;
 
-  ngOnInit(): void {
-    const id = Number(this.route.snapshot.paramMap.get("id"));
-    const startTime = Date.now();
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['id'] && this.id) {
+      const id = Number(this.id);
 
-    if (!id) {
-      this.error.set("Product not found.");
-      this.loading.set(false);
-      return;
+      if (!id) {
+        this.error.set("Product not found.");
+        this.loading.set(false);
+        return;
+      }
+
+      this.product.set(undefined);
+      this.relatedProducts.set([]);
+      this.loadProduct(id);
     }
+  }
+
+  private loadProduct(id: number): void {
+    const startTime = Date.now();
 
     this.productService.getById(id).subscribe({
       next: (data) => {
@@ -51,7 +59,7 @@ export class ProductDetail implements OnInit {
       },
     });
   }
-
+  
   private delayLoadingDone(startTime: number): void {
     const elapsed = Date.now() - startTime;
     const remaining = Math.max(0, this.MIN_LOADING_MS - elapsed);

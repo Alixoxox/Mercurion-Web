@@ -1,5 +1,5 @@
 import { ApplicationConfig } from '@angular/core';
-import { provideRouter, withInMemoryScrolling } from '@angular/router';
+import { provideRouter, withComponentInputBinding, withInMemoryScrolling } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { errorInterceptor } from './core/interceptors/error.interceptor';
 import { provideAnimations } from '@angular/platform-browser/animations';
@@ -11,6 +11,7 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(
       routes,
+      withComponentInputBinding(),
       withInMemoryScrolling({ scrollPositionRestoration: 'top' }),
     ),
     provideHttpClient(withInterceptors([errorInterceptor])),

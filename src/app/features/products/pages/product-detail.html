@@ -90,7 +90,7 @@
         <span class="text-sm text-gray-500 font-medium">Loading related products...</span>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-      <div *ngFor="let _ of [1,2,3,4]" class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden animate-pulse h-full flex flex-col">
+      <div *ngFor="let _ of relatedProducts()" class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden animate-pulse h-full flex flex-col">
         <div class="aspect-square bg-gray-100 shrink-0"></div>
         <div class="p-4 space-y-3 flex-1 flex flex-col">
           <div class="h-4 bg-gray-100 rounded w-1/4"></div>
