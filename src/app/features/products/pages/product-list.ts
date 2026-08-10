@@ -49,8 +49,7 @@ export class ProductList implements OnInit {
   filteredProducts = computed(() => {
     return this.products().filter(p => {
       const matchesSearch = !this.searchTerm() || p.title.toLowerCase().includes(this.searchTerm().toLowerCase());
-      const matchesCategory = !this.selectedCategory() || p.category === this.selectedCategory();
-      return matchesSearch && matchesCategory;
+      return matchesSearch;
     });
   });
 
@@ -65,32 +64,68 @@ export class ProductList implements OnInit {
     }
   });
 
-  totalPages = computed(() => Math.max(1, Math.ceil(this.sortedProducts().length / this.PAGE_SIZE)));
+  totalPages = computed(() => {
+    if (this.selectedCategory()) {
+      return Math.max(1, Math.ceil(this.sortedProducts().length / this.PAGE_SIZE));
+    }
+    return Math.max(1, this.serverTotalPages());
+  });
 
   paginatedProducts = computed(() => {
+    if (!this.selectedCategory()) {
+      return this.sortedProducts();
+    }
     const start = (this.currentPage() - 1) * this.PAGE_SIZE;
     return this.sortedProducts().slice(start, start + this.PAGE_SIZE);
   });
 
   readonly PAGE_SIZE = 8;
   private readonly MIN_LOADING_MS = 800;
+  serverTotalPages = signal(1);
+  private loadedCategory = signal<string | null | undefined>(undefined);
 
   ngOnInit(): void {
     localStorage.getItem('loggedIn') === 'true' ? this.userService.loggedIn.set(true) : this.userService.loggedIn.set(false)
-    const startTime = Date.now();
-    this.productService.getAll().subscribe({
-      next: (data) => {
-        this.products.set(data);
-        this.delayLoadingDone(startTime);
-      },
-      error: () => {
-        this.error.set("Failed to load products. Please try again.");
-        this.delayLoadingDone(startTime);
-      },
-    });
+    this.loadProducts();
 
     this.productService.getCategories().subscribe({
       next: (data) => this.categories.set(data),
+    });
+  }
+
+  private loadProducts(): void {
+    const startTime = Date.now();
+    const done = () => this.delayLoadingDone(startTime);
+    const category = this.selectedCategory();
+
+    if (category) {
+      this.productService.getByCategory(category).subscribe({
+        next: (data) => {
+          this.products.set(data);
+          this.loadedCategory.set(category);
+          this.userService.seedWishlist(data);
+          done();
+        },
+        error: () => {
+          this.error.set("Failed to load products. Please try again.");
+          done();
+        },
+      });
+      return;
+    }
+
+    this.productService.getAll(this.currentPage() - 1, this.PAGE_SIZE).subscribe({
+      next: (res) => {
+        this.products.set(res.content);
+        this.serverTotalPages.set(res.totalPages);
+        this.loadedCategory.set(null);
+        this.userService.seedWishlist(res.content);
+        done();
+      },
+      error: () => {
+        this.error.set("Failed to load products. Please try again.");
+        done();
+      },
     });
   }
 
@@ -102,6 +137,9 @@ export class ProductList implements OnInit {
 
   onFilterChange(): void {
     this.currentPage.set(1);
+    if (this.loadedCategory() !== this.selectedCategory()) {
+      this.loadProducts();
+    }
   }
 
   clearFilters(): void {
@@ -109,6 +147,7 @@ export class ProductList implements OnInit {
     this.selectedCategory.set(null);
     this.sortBy.set('default');
     this.currentPage.set(1);
+    this.loadProducts();
   }
 
   getSortLabel(): string {
@@ -118,6 +157,9 @@ export class ProductList implements OnInit {
   goToPage(page: number): void {
     if (page >= 1 && page <= this.totalPages()) {
       this.currentPage.set(page);
+      if (!this.selectedCategory()) {
+        this.loadProducts();
+      }
     }
   }
 
@@ -140,5 +182,14 @@ export class ProductList implements OnInit {
   deleteFromCart(product: Product): void {
     this.userService.deleteFromCart(product.id);
     this.toast.info('Product removed from cart', 'Success', { timeOut: 2000, progressBar: true });
+  }
+
+  onToggleLike(product: Product): void {
+    if (!this.userService.loggedIn()) {
+      this.router.navigate(['auth/login']);
+      this.toast.error('Please login to like products');
+      return;
+    }
+    this.userService.toggleWishlist(product.id);
   }
 }

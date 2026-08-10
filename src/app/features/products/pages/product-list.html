@@ -109,8 +109,10 @@
       [product]="product"
       [isLoggedIn]="userService.loggedIn()"
       [isInCart]="isInCart(product)"
+      [isLiked]="userService.isWishlisted(product.id)"
       (addToCart)="onAddToCart($event)"
-      (deleteFromCart)="deleteFromCart($event)"/>
+      (deleteFromCart)="deleteFromCart($event)"
+      (like)="onToggleLike($event)"/>
     </div>
 
     <div class="flex items-center justify-center gap-4 mt-8">

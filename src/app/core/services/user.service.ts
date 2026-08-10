@@ -1,11 +1,15 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { user } from '../../shared/models/userDTO.model';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { user, AuthResponse } from '../../shared/models/userDTO.model';
 import { Router } from '@angular/router';
 
 @Injectable({
   providedIn: 'root'
 })
 export class UserService {
+  private http = inject(HttpClient);
+  token = signal<string | null>(localStorage.getItem('token'));
   users: user[] = []
   loggedIn = signal(false);
   constructor() {
@@ -115,11 +119,73 @@ export class UserService {
     return result;
   }
 
+  setAuthenticated(user: user, token: string) {
+    this.currentUser.set(user);
+    this.loggedIn.set(true);
+    this.token.set(token);
+    localStorage.setItem('loggedIn', 'true');
+    localStorage.setItem('loggedInUser', JSON.stringify(user));
+    localStorage.setItem('token', token);
+  }
+
+  register(name: string, email: string, password: string): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${process.env['NG_APP_API_URL']}/users/auth/register`, { name, email, password });
+  }
+
+  login(email: string, password: string): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${process.env['NG_APP_API_URL']}/users/auth/login`, { email, password });
+  }
+
   logout() {
     this.loggedIn.set(false);
     this.currentUser.set(null);
+    this.token.set(null);
+    this.wishlistIds.set(new Set());
     localStorage.removeItem('loggedIn');
     localStorage.removeItem('loggedInUser');
+    localStorage.removeItem('token');
     this.route.navigate(['auth/login']);
+  }
+
+  wishlistIds = signal<Set<number>>(new Set());
+
+  isWishlisted(productId: number): boolean {
+    return this.wishlistIds().has(productId);
+  }
+
+  seedWishlist(products: { id: number; wishlistedBy?: { id: number; userId?: number }[] }[]): void {
+    const userId = this.currentUser()?.id;
+    if (userId == null) {
+      this.wishlistIds.set(new Set());
+      return;
+    }
+    this.wishlistIds.set(
+      new Set(
+        products
+          .filter(p => p.wishlistedBy?.some(w => (w.userId ?? w.id) === userId))
+          .map(p => p.id)
+      )
+    );
+  }
+
+  toggleWishlist(productId: number): void {
+    if (!this.loggedIn() || !this.token()) {
+      this.route.navigate(['auth/login']);
+      return;
+    }
+
+    const current = this.wishlistIds();
+    const next = new Set(current);
+    if (next.has(productId)) next.delete(productId);
+    else next.add(productId);
+    this.wishlistIds.set(next);
+
+    this.http
+      .post(`${process.env['NG_APP_API_URL']}/users/mark/wishlist/${productId}`, null, { responseType: 'text' })
+      .subscribe({
+        error: () => {
+          this.wishlistIds.set(current);
+        },
+      });
   }
 }

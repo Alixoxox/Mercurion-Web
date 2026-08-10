@@ -16,23 +16,31 @@ export class Login {
   
   constructor(public userService:UserService, public toastr: ToastrService, public router: Router) {}
   loginForm = loginForm;
+  isLoading = false;
   onLogin() {
     const email = this.loginForm.get('email')?.value;
     const password = this.loginForm.get('password')?.value;
-  
-    const user = this.userService.users.find(
-      user => user.email === email && user.password === password
-    );
-  
-    if (user) {
-      this.userService.loggedIn.set(true);
-      this.userService.currentUser.set(user);
-      localStorage.setItem('loggedIn', 'true');
-      this.toastr.success('Login successful');
-      this.router.navigate(['/products']);
-    } else {
-      this.userService.loggedIn.set(false);
-      this.toastr.error('Invalid email or password');
-    }
+    if (!email || !password) return;
+
+    this.isLoading = true;
+    this.userService.login(email, password).subscribe({
+      next: (res) => {
+        const user = {
+          id: res.UserData.id,
+          name: res.UserData.name,
+          email: res.UserData.email,
+          password: '',
+          cart: []
+        };
+        this.userService.setAuthenticated(user, res.Token);
+        this.toastr.success('Login successful');
+        this.router.navigate(['/products']);
+      },
+      error: (err) => {
+        this.isLoading = false;
+        const message = typeof err.error === 'string' ? err.error : err.error?.message;
+        this.toastr.error(message || 'Login failed. Please try again.');
+      }
+    });
   }
 }

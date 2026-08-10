@@ -7,3 +7,8 @@ export interface user {
     email: string,
     cart: Product[]
 }
+
+export interface AuthResponse {
+    Token: string,
+    UserData: { id: number, name: string, email: string }
+}
