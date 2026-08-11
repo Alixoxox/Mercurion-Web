@@ -38,6 +38,12 @@ export class Cart {
   grandTotal = computed(() => this.subtotal() + this.tax());
 
   increaseQuantity(product: Product): void {
+    const item = this.cartItems().find(i => i.product.id === product.id);
+    const inCart = item?.quantity ?? 0;
+    if (inCart >= product.stock) {
+      this.toast.info('No more stock available', 'Cart', { timeOut: 1500, progressBar: true });
+      return;
+    }
     this.userService.addToCart(product);
     this.toast.info('Quantity increased', 'Cart', { timeOut: 1500, progressBar: true });
   }
@@ -55,7 +61,13 @@ export class Cart {
   }
 
   removeItem(productId: number): void {
-    this.userService.deleteFromCart(productId);
+    const item = this.cartItems().find(i => i.product.id === productId);
+    if (!item) return;
+    if (item.quantity === 1) {
+      this.userService.deleteFromCart(productId);
+    } else {
+      this.userService.removeOneFromCart(productId);
+    }
     this.toast.info('Item removed from cart', 'Cart', { timeOut: 1500, progressBar: true });
   }
 

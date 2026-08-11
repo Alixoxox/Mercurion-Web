@@ -33,6 +33,7 @@ export class Login {
           cart: []
         };
         this.userService.setAuthenticated(user, res.Token);
+        this.userService.fetchWishlist();
         this.toastr.success('Login successful');
         this.router.navigate(['/products']);
       },

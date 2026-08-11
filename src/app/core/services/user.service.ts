@@ -112,8 +112,8 @@ export class UserService {
 
   generateOrderNumber(): string {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let result = 'ORD-';
-    for (let i = 0; i < 8; i++) {
+    let result = 'MEZN-';
+    for (let i = 0; i < 9; i++) {
       result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return result;
@@ -136,6 +136,31 @@ export class UserService {
     return this.http.post<AuthResponse>(`${process.env['NG_APP_API_URL']}/users/auth/login`, { email, password });
   }
 
+  rateProduct(productId: number, rating: number, comment: string, image: File | null): Observable<any> {
+    const formData = new FormData();
+    formData.append('rating', new Blob([JSON.stringify({ productId, rating, Comment: comment })], { type: 'application/json' }));
+    if (image) formData.append('image', image);
+    return this.http.post(`${process.env['NG_APP_API_URL']}/users/rate`, formData);
+  }
+
+  removeRating(ratingId: number): Observable<string> {
+    return this.http.delete(
+      `${process.env['NG_APP_API_URL']}/users/remove/${ratingId}`,
+      { responseType: 'text' }
+    );
+  }
+
+  purchaseOrder(payload: {
+    phoneNumber: string;
+    address: string;
+    city: string;
+    country: string;
+    postalCode: string;
+    products: { id: number; quantity: number }[];
+  }): Observable<any> {
+    return this.http.post(`${process.env['NG_APP_API_URL']}/orders/purchase`, payload);
+  }
+
   logout() {
     this.loggedIn.set(false);
     this.currentUser.set(null);
@@ -153,19 +178,17 @@ export class UserService {
     return this.wishlistIds().has(productId);
   }
 
-  seedWishlist(products: { id: number; wishlistedBy?: { id: number; userId?: number }[] }[]): void {
-    const userId = this.currentUser()?.id;
-    if (userId == null) {
+  fetchWishlist(): void {
+    if (!this.loggedIn() || !this.token()) {
       this.wishlistIds.set(new Set());
       return;
     }
-    this.wishlistIds.set(
-      new Set(
-        products
-          .filter(p => p.wishlistedBy?.some(w => (w.userId ?? w.id) === userId))
-          .map(p => p.id)
-      )
-    );
+    this.http
+      .get<{ productId?: number }[]>(`${process.env['NG_APP_API_URL']}/users/watch/wishlist`)
+      .subscribe({
+        next: (rows) => this.wishlistIds.set(new Set(rows.filter(r => r.productId != null).map(r => r.productId!))),
+        error: () => this.wishlistIds.set(new Set()),
+      });
   }
 
   toggleWishlist(productId: number): void {
@@ -187,5 +210,6 @@ export class UserService {
           this.wishlistIds.set(current);
         },
       });
+      console.log(`Toggled wishlist for product ${productId}. Current wishlist:`, Array.from(this.wishlistIds()));
   }
 }

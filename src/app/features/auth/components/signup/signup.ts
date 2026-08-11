@@ -33,6 +33,7 @@ export class Signup {
         };
         this.isLoading = false;
         this.userService.setAuthenticated(s, res.Token);
+        this.userService.fetchWishlist();
         this.toastr.success('Account created');
         this.router.navigate(['/products']);
       },

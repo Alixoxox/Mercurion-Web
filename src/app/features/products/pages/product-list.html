@@ -109,6 +109,7 @@
       [product]="product"
       [isLoggedIn]="userService.loggedIn()"
       [isInCart]="isInCart(product)"
+      [isStockLimitReached]="isStockLimitReached(product)"
       [isLiked]="userService.isWishlisted(product.id)"
       (addToCart)="onAddToCart($event)"
       (deleteFromCart)="deleteFromCart($event)"

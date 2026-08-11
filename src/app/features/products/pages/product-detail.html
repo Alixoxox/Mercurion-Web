@@ -60,21 +60,139 @@
       <p class="text-gray-600 leading-relaxed">{{ p.description }}</p>
 
       <ng-container *ngIf="userService.loggedIn()">
-        <div class="flex gap-3 pt-2">
-          <ng-container *ngIf="isInCart(p)">
-            <button (click)="deleteFromCart(p)"
-                    class="flex-1 text-sm font-medium text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 px-4 py-2.5 rounded-lg transition cursor-pointer">
-              Remove from Cart
-            </button>
-          </ng-container>
-          <button (click)="onAddToCart(p)"
-                  [class.flex-1]="isInCart(p)"
-                  [class.w-full]="!isInCart(p)"
-                  class="text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 px-4 py-2.5 rounded-lg transition cursor-pointer">
-            {{ isInCart(p) ? 'Add Another' : 'Add to Cart' }}
+        <ng-container *ngIf="p.stock === 0">
+          <button disabled
+                  class="w-full text-sm font-medium text-gray-400 bg-gray-100 border border-gray-200 px-4 py-2.5 rounded-lg cursor-not-allowed">
+            Out of Stock
           </button>
-        </div>
+        </ng-container>
+        <ng-container *ngIf="p.stock > 0">
+          <div class="flex gap-3 pt-2">
+            <ng-container *ngIf="isInCart(p)">
+              <button (click)="deleteFromCart(p)"
+                      class="flex-1 text-sm font-medium text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 px-4 py-2.5 rounded-lg transition cursor-pointer">
+                Remove from Cart
+              </button>
+            </ng-container>
+            <button (click)="onAddToCart(p)"
+                    [disabled]="isStockLimitReached(p)"
+                    [class.flex-1]="isInCart(p)"
+                    [class.w-full]="!isInCart(p)"
+                    class="text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2.5 rounded-lg transition cursor-pointer">
+              {{ isStockLimitReached(p) ? 'Out of Stock' : (isInCart(p) ? 'Add Another' : 'Add to Cart') }}
+            </button>
+          </div>
+        </ng-container>
       </ng-container>
+    </div>
+  </div>
+
+  <div *ngIf="!loading() && !error() && product()" class="mt-16">
+    <div class="bg-white rounded-xl border border-gray-200 p-6 sm:p-8">
+      <h2 class="text-xl font-bold text-gray-900 ">Customer Feedback</h2>
+
+      <div *ngIf="feedbackLoading()" class="flex items-center justify-center gap-3 py-5">
+        <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <span class="text-sm text-gray-500 font-medium">Loading feedback...</span>
+      </div>
+
+      <div *ngIf="!feedbackLoading()" class="mt-8 pt-6 border-t border-gray-200">
+        <ng-container *ngIf="!userService.loggedIn()">
+          <p class="text-sm text-gray-500">Please <a routerLink="/auth/login" class="text-blue-600 hover:underline">log in</a> to leave feedback.</p>
+        </ng-container>
+
+        <ng-container *ngIf="userService.loggedIn() && !canReview()">
+          <p class="text-sm text-green-600 font-medium">You have already reviewed this product. Only one feedback per person.</p>
+        </ng-container>
+
+        <ng-container *ngIf="userService.loggedIn() && canReview()">
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">Leave your feedback</h3>
+
+          <div class="flex items-center gap-1 mb-4">
+            <button *ngFor="let star of [1,2,3,4,5]"
+                    type="button"
+                    (click)="setRating(star)"
+                    class="focus:outline-none cursor-pointer transition hover:scale-110"
+                    [attr.aria-label]="star + ' star'">
+              <svg *ngIf="star <= myRating()" xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-yellow-500" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.363-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+              </svg>
+              <svg *ngIf="star > myRating()" xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-300 hover:text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.363-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+              </svg>
+            </button>
+          </div>
+
+          <textarea [ngModel]="comment()" (ngModelChange)="comment.set($event)"
+                    name="comment"
+                    rows="4"
+                    placeholder="Share your experience with this product... (optional)"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none mb-4"></textarea>
+
+          <div class="flex items-center gap-3 mb-4">
+            <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+              <span class="inline-flex items-center gap-2 bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg transition">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                {{ selectedImage() ? 'Image selected' : 'Attach image' }}
+              </span>
+              <input type="file" accept="image/*" (change)="onImageSelected($event)" class="hidden" />
+            </label>
+            <button *ngIf="selectedImage()" type="button" (click)="selectedImage.set(null)"
+                    class="text-sm text-red-500 hover:text-red-700 cursor-pointer">Remove</button>
+          </div>
+
+          <button (click)="submitFeedback()"
+                  [disabled]="submitting()"
+                  class="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-2.5 rounded-lg text-sm font-medium transition cursor-pointer">
+            {{ submitting() ? 'Submitting...' : 'Submit Feedback' }}
+          </button>
+        </ng-container>
+      </div>
+      
+      <div *ngIf="!feedbackLoading() && orderedFeedback().length > 0" class="py-6">
+        <div *ngFor="let f of orderedFeedback()" class="relative border-b border-gray-100 pb-6 last:border-b-0 last:pb-0">
+          <div class="flex items-center justify-between py-4">
+            <div class="flex items-center gap-2">
+              <span class="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-sm font-semibold">
+                {{ f.userName.charAt(0).toUpperCase() }}
+              </span>
+              <span class="font-medium text-gray-900">{{ f.userName }}</span>
+            </div>
+            <span class="text-sm text-gray-400">{{ f.createdAt | date:'mediumDate' }}</span>
+          </div>
+          <button *ngIf="userService.loggedIn() && f.userId === userService.currentUser()?.id"
+                  (click)="deleteFeedback(f)"
+                  [disabled]="deletingId() !== null"
+                  title="Delete your feedback"
+                  class="absolute right-0 top-12 flex items-center gap-1.5 text-sm font-medium text-red-600 border border-red-200 bg-red-50 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-1.5 rounded-lg transition cursor-pointer">
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+            </svg>
+            {{ deletingId() === f.id ? 'Deleting...' : 'Delete' }}
+          </button>
+          <div class="flex items-center gap-1 mb-2 text-yellow-500">
+            <ng-container *ngFor="let star of [1,2,3,4,5]">
+              <svg *ngIf="star <= f.value" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.363-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+              </svg>
+              <svg *ngIf="star > f.value" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-300" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.363-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+              </svg>
+            </ng-container>
+          </div>
+          <p *ngIf="f.comment" class="text-gray-600 text-sm leading-relaxed"
+                 [class.pr-28]="userService.loggedIn() && f.userId === userService.currentUser()?.id">{{ f.comment }}</p>
+          <img *ngIf="f.feedbackImage" [src]="f.feedbackImage" [alt]="f.userName + ' feedback'" loading="lazy"
+               class="mt-3 w-40 h-40 object-cover rounded-lg border border-gray-200" />
+        </div>
+      </div>
+
+      
     </div>
   </div>
 
@@ -107,6 +225,7 @@
         [product]="rp"
         [isLoggedIn]="userService.loggedIn()"
         [isInCart]="isInCart(rp)"
+        [isStockLimitReached]="isStockLimitReached(rp)"
         (addToCart)="onAddToCart($event)"
         (deleteFromCart)="deleteFromCart($event)"/>
     </div>

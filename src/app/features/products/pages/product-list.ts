@@ -103,7 +103,7 @@ export class ProductList implements OnInit {
         next: (data) => {
           this.products.set(data);
           this.loadedCategory.set(category);
-          this.userService.seedWishlist(data);
+          this.userService.fetchWishlist();
           done();
         },
         error: () => {
@@ -116,10 +116,11 @@ export class ProductList implements OnInit {
 
     this.productService.getAll(this.currentPage() - 1, this.PAGE_SIZE).subscribe({
       next: (res) => {
+        console.log(res.content)
         this.products.set(res.content);
         this.serverTotalPages.set(res.totalPages);
         this.loadedCategory.set(null);
-        this.userService.seedWishlist(res.content);
+        this.userService.fetchWishlist();
         done();
       },
       error: () => {
@@ -169,6 +170,10 @@ export class ProductList implements OnInit {
       this.toast.error('Please login to add products to cart');
       return;
     }
+    if (this.isStockLimitReached(product)) {
+      this.toast.info('Out of stock', 'Cart', { timeOut: 2000, progressBar: true });
+      return;
+    }
     this.userService.addToCart(product);
     this.toast.info('Product added to cart', 'Success', { timeOut: 2000, progressBar: true });
   }
@@ -179,8 +184,16 @@ export class ProductList implements OnInit {
     return user.cart.some(item => item.id === product.id);
   }
 
+  isStockLimitReached(product: Product): boolean {
+    if (product.stock <= 0) return false;
+    const user = this.userService.currentUser();
+    if (!user) return false;
+    const count = user.cart.filter(item => item.id === product.id).length;
+    return count >= product.stock;
+  }
+
   deleteFromCart(product: Product): void {
-    this.userService.deleteFromCart(product.id);
+    this.userService.removeOneFromCart(product.id);
     this.toast.info('Product removed from cart', 'Success', { timeOut: 2000, progressBar: true });
   }
 

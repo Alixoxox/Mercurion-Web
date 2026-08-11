@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { Header } from './shared/components/header/header';
 import { Footer } from './shared/components/footer/footer';
@@ -10,5 +10,6 @@ import { Footer } from './shared/components/footer/footer';
   templateUrl: './app.html',
 })
 export class App {
+
   protected readonly title = signal('ecomerce-app');
 }

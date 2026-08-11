@@ -62,6 +62,14 @@ import { Product } from "../../../shared/models/product";
     </ng-container>
 
     <button
+      *ngIf="product.stock === 0 || isStockLimitReached"
+      disabled
+      class="flex-1 text-sm font-medium text-gray-400 bg-gray-100 border border-gray-200 px-4 py-2 rounded-lg cursor-not-allowed">
+      Out of Stock
+    </button>
+
+    <button
+      *ngIf="product.stock > 0 && !isStockLimitReached"
       (click)="addToCart.emit(product)"
       [class.flex-1]="isLoggedIn && isInCart"
       [class.w-full]="!(isLoggedIn && isInCart)"
@@ -78,6 +86,7 @@ export class ProductCard {
   @Input() isLoggedIn = false;
   @Input() isInCart = false;
   @Input() isLiked = false;
+  @Input() isStockLimitReached = false;
   @Input({ required: true }) product!: Product;
   @Output() addToCart = new EventEmitter<Product>();
   @Output() deleteFromCart = new EventEmitter<Product>();
