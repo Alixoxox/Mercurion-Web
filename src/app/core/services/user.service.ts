@@ -109,16 +109,7 @@ export class UserService {
     localStorage.setItem('users', JSON.stringify(this.users));
     localStorage.setItem('loggedInUser',JSON.stringify(this.currentUser));
   }
-
-  generateOrderNumber(): string {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let result = 'MEZN-';
-    for (let i = 0; i < 9; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
-  }
-
+  
   setAuthenticated(user: user, token: string) {
     this.currentUser.set(user);
     this.loggedIn.set(true);

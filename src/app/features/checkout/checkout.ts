@@ -76,7 +76,7 @@ export class Checkout implements OnInit {
     this.userService.purchaseOrder(payload).subscribe({
       next: (order: any) => {
         this.placing.set(false);
-        this.orderNumber = order?.id ? String(order.id) : this.userService.generateOrderNumber();
+        this.orderNumber = order?.id ?? `MEZN-${order.id}`;
         this.totalAmount = order?.totalAmount ?? this.grandTotal();
         this.userService.clearCart();
         this.successDialog.nativeElement.showModal();

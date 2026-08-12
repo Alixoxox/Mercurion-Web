@@ -1,0 +1,89 @@
+<section class="max-w-7xl mx-auto px-4 py-10">
+  <header class="mb-8">
+    <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Orders</h1>
+  </header>
+
+  <div *ngIf="loading()" class="flex items-center justify-center py-20 text-gray-500">
+    Loading your orders...
+  </div>
+
+  <div *ngIf="!loading() && error()" class="text-center py-16">
+    <p class="text-gray-600">{{ error() }}</p>
+    <button (click)="loadHistory()"
+      class="mt-4 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition cursor-pointer">
+      Try again
+    </button>
+  </div>
+
+  <div *ngIf="!loading() && !error() && orders().length === 0" class="text-center py-20">
+    <h2 class="text-xl font-semibold text-gray-900">No orders yet</h2>
+    <p class="mt-2 text-gray-500">When you place an order, it will show up here.</p>
+    <a routerLink="/products"
+      class="inline-block mt-6 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 px-5 py-2.5 rounded-lg transition">
+      Start shopping
+    </a>
+  </div>
+
+  <div *ngIf="!loading() && !error() && orders().length > 0"
+    class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div
+      *ngFor="let order of orders()"
+      (click)="openOrder(order)"
+      class="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition p-5 cursor-pointer">
+      <div class="flex items-center justify-between gap-2">
+        <span class="text-sm font-bold text-gray-900">Order #MEZN-{{ order.id }}</span>
+        <span [class]="'text-xs font-medium px-2 py-0.5 rounded-full ' + statusClass(order.status)">{{ order.status }}</span>
+      </div>
+      <p class="mt-1 text-xs text-gray-500">{{ order.orderDate | date:'MMM d, yyyy' }}</p>
+      <div class="mt-4">
+        <span class="text-lg font-bold text-gray-900">{{ order.totalAmount | currency }}</span>
+      </div>
+    </div>
+  </div>
+
+  <dialog #orderDialog (click)="onDialogClick($event)"
+    class="backdrop:bg-black/50 m-auto w-full max-w-lg rounded-xl p-0 shadow-xl">
+    <ng-container *ngIf="selectedOrder() as order">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+        <div>
+          <h2 class="text-lg font-bold text-gray-900">Order #MEZN-{{ order.id }}</h2>
+          <p class="text-xs text-gray-500">
+            {{ order.orderDate | date:'MMM d, yyyy' }} ·
+            <span [class]="'font-medium px-1.5 py-0.5 rounded-full ' + statusClass(order.status)">{{ order.status }}</span>
+          </p>
+        </div>
+        <button (click)="closeDialog()" aria-label="Close" class="text-gray-500 hover:text-gray-900 transition cursor-pointer">
+          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="px-5 py-4 max-h-[50vh] overflow-y-auto">
+        <div *ngIf="itemsLoading()" class="py-8 text-center text-sm text-gray-500">Loading items...</div>
+        <div *ngIf="!itemsLoading() && itemsError()" class="py-8 text-center text-sm text-red-600">Could not load items for this order.</div>
+
+        <ul *ngIf="!itemsLoading() && !itemsError()" class="divide-y divide-gray-100">
+          <li *ngFor="let item of items()" class="py-3 flex items-center gap-4">
+            <img [src]="item.image" [alt]="item.title" loading="lazy"
+              class="w-14 h-14 object-contain rounded-lg border border-gray-100 bg-white shrink-0" />
+            <div class="min-w-0 flex-1">
+              <p class="text-sm font-medium text-gray-900 truncate">{{ item.title }}</p>
+              <p class="text-xs text-gray-500">{{ item.category }} · Qty {{ item.quantity }}</p>
+            </div>
+            <span class="text-sm font-semibold text-gray-900 shrink-0">{{ item.priceAtPurchase * item.quantity | currency }}</span>
+          </li>
+        </ul>
+      </div>
+
+      <div *ngIf="!itemsLoading() && !itemsError()" class="px-5 py-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
+        <dl class="space-y-1 text-sm">
+          <div class="flex justify-between text-gray-600 gap-4"><dt class="shrink-0">Shipping to</dt><dd class="text-right text-gray-900">{{ order.address }}</dd></div>
+          <div class="flex justify-between text-gray-600 gap-4"><dt class="shrink-0">City / Country</dt><dd class="text-right text-gray-900">{{ order.city }}, {{ order.country }} {{ order.postalCode }}</dd></div>
+          <div class="flex justify-between text-gray-600 gap-4"><dt class="shrink-0">Phone</dt><dd class="text-right text-gray-900">{{ order.phoneNumber }}</dd></div>
+          <div class="flex justify-between text-gray-900 font-bold pt-1 border-t border-gray-200 mt-1"><dt>Total</dt><dd>{{ order.totalAmount | currency }}</dd></div>
+        </dl>
+      </div>
+    </ng-container>
+  </dialog>
+</section>

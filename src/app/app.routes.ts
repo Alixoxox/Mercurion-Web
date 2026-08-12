@@ -18,6 +18,7 @@ export const routes: Routes = [
   { path: 'about', loadComponent: () => import('./features/about/about').then(m => m.About)},
   { path: 'contact', loadComponent: () => import('./features/contact/contact').then(m => m.Contact)},
   { path: 'cart', loadComponent: () => import('./features/cart/cart').then(m => m.Cart), canActivate:[authGuard]},
+  { path: 'history', loadComponent: () => import('./features/history/history').then(m => m.History), canActivate:[authGuard]},
   { path: 'checkout', loadComponent: () => import('./features/checkout/checkout').then(m => m.Checkout), canActivate:[authGuard]},
   { path: '**', redirectTo: 'products' }
 ];
