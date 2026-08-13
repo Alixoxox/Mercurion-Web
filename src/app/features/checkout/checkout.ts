@@ -83,6 +83,10 @@ export class Checkout implements OnInit {
       },
       error: (err) => {
         this.placing.set(false);
+        if(err.status ==403){
+          this.toast.error('Your Session has Expired.\nLogin In Again', 'Error', { timeOut: 3000, progressBar: true });
+          return;
+        }
         const message = typeof err.error === 'string' ? err.error : 'Failed to place order. Please try again.';
         this.toast.error(message, 'Error', { timeOut: 3000, progressBar: true });
       },

@@ -134,6 +134,10 @@ export class UserService {
     return this.http.post(`${process.env['NG_APP_API_URL']}/users/rate`, formData);
   }
 
+  sendMail(payload: { mail: string; subject: string; message: string }): Observable<any> {
+    return this.http.post(`${process.env['NG_APP_API_URL']}/users/sendMail`, payload);
+  }
+
   removeRating(ratingId: number): Observable<string> {
     return this.http.delete(
       `${process.env['NG_APP_API_URL']}/users/remove/${ratingId}`,
