@@ -5,10 +5,11 @@ export interface user {
     name: string,
     password: string,
     email: string,
+    role: string,
     cart: Product[]
 }
 
 export interface AuthResponse {
     Token: string,
-    UserData: { id: number, name: string, email: string }
+    UserData: { id: number, name: string, email: string, role: string}
 }

@@ -33,7 +33,7 @@
                     class="block w-full px-4 py-2 font-medium text-gray-700 whitespace-nowrap hover:bg-gray-100 hover:text-gray-900 transition duration-300 ease-in-out text-left text-sm">
               All Categories
             </button>
-            <button *ngFor="let cat of categories()" (click)="selectedCategory.set(cat); onFilterChange(); categoryOpen.set(false)"
+            <button *ngFor="let cat of productService.categories()" (click)="selectedCategory.set(cat); onFilterChange(); categoryOpen.set(false)"
                     class="block w-full px-4 py-2 font-medium text-gray-700 whitespace-nowrap hover:bg-gray-100 hover:text-gray-900 transition duration-300 ease-in-out text-left text-sm">
               {{ cat }}
             </button>
@@ -91,11 +91,11 @@
     </button>
   </div>
 
-  <div *ngIf="!loading() && !error() && products().length === 0" class="text-center py-16">
+  <div *ngIf="!loading() && !error() &&  productService.products().length === 0" class="text-center py-16">
     <p class="text-gray-500 text-lg">No products found.</p>
   </div>
 
-  <div *ngIf="!loading() && !error() && products().length > 0 && sortedProducts().length === 0" class="text-center py-16">
+  <div *ngIf="!loading() && !error() && productService.products().length > 0 && sortedProducts().length === 0" class="text-center py-16">
     <p class="text-gray-500 text-lg mb-4">No products match your filters.</p>
     <button (click)="clearFilters()"
             class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition cursor-pointer">

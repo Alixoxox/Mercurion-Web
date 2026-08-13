@@ -10,10 +10,8 @@ import { Router } from '@angular/router';
 export class UserService {
   private http = inject(HttpClient);
   token = signal<string | null>(localStorage.getItem('token'));
-  users: user[] = []
   loggedIn = signal(false);
   constructor() {
-    this.getUsers();
     const loggedIn = localStorage.getItem('loggedIn') === 'true'; //ts status
     if (loggedIn) {
       this.loggedIn.set(true);
@@ -23,62 +21,32 @@ export class UserService {
       } catch {}
     }
   }
-  usersCount = signal(0);
   route=inject(Router);
   currentUser = signal<user | null>(null);
   cartCount = computed(() => this.currentUser()?.cart.length ?? 0);
-  private generateId(){
-    return this.users.length > 0
-      ? Math.max(...this.users.map(user => user.id)) + 1
-      : 1;
+
+  private persistUser(updated: user) {
+    this.currentUser.set(updated);
+    localStorage.setItem('loggedInUser', JSON.stringify(updated));
   }
-  add(userModel: user) {
-    userModel.id = this.generateId();
-    this.users.push(userModel);
-    this.usersCount.update(count => count + 1);
-    localStorage.setItem('users', JSON.stringify(this.users));
-  }
-  getUsers() {
-    try {
-      this.users = JSON.parse(localStorage.getItem('users') || '[]');
-    } catch {
-      this.users = [];
-      localStorage.removeItem('users');
-    }
-    this.usersCount.set(this.users.length);
-  }
+
   addToCart(product: any) {
-    const user=this.currentUser()
+    const user = this.currentUser()
     if (!user) {
       this.route.navigate(['auth/login']);
       return;
     }
-    const updated = { ...user, cart: [...user.cart, product] };
-    this.currentUser.set(updated);
+    this.persistUser({ ...user, cart: [...user.cart, product] });
+  }
 
-    let idx=this.users.findIndex(u => u.id === user.id);
-    if(idx !== -1){
-      this.users[idx] = updated;
-    }
-    localStorage.setItem('users', JSON.stringify(this.users));
-    localStorage.setItem('loggedInUser', JSON.stringify(updated));
-
-}
   deleteFromCart(productId: number) {
-  const user=this.currentUser()
-  if (!user) {
-    this.route.navigate(['auth/login']);
-    return;
+    const user = this.currentUser()
+    if (!user) {
+      this.route.navigate(['auth/login']);
+      return;
+    }
+    this.persistUser({ ...user, cart: user.cart.filter(p => p.id !== productId) });
   }
-  const updated = { ...user, cart: user.cart.filter(p => p.id !== productId) };
-  this.currentUser.set(updated);
-  let idx=this.users.findIndex(u => u.id === user.id);
-  if(idx !== -1){
-    this.users[idx] = updated;
-  }
-      localStorage.setItem('users', JSON.stringify(this.users));
-    localStorage.setItem('loggedInUser', JSON.stringify(updated));
-}
 
   removeOneFromCart(productId: number) {
     const user = this.currentUser()
@@ -87,27 +55,13 @@ export class UserService {
     if (idx === -1) return;
     const newCart = [...user.cart];
     newCart.splice(idx, 1);
-    const updated = { ...user, cart: newCart };
-    this.currentUser.set(updated);
-    let userIdx = this.users.findIndex(u => u.id === user.id);
-    if (userIdx !== -1) {
-      this.users[userIdx] = updated;
-    }
-    localStorage.setItem('users', JSON.stringify(this.users));
-    localStorage.setItem('loggedInUser', JSON.stringify(updated));
+    this.persistUser({ ...user, cart: newCart });
   }
 
   clearCart() {
     const user = this.currentUser()
     if (!user) return;
-    const updated = { ...user, cart: [] };
-    this.currentUser.set(updated);
-    let userIdx = this.users.findIndex(u => u.id === user.id);
-    if (userIdx !== -1) {
-      this.users[userIdx] = updated;
-    }
-    localStorage.setItem('users', JSON.stringify(this.users));
-    localStorage.setItem('loggedInUser',JSON.stringify(this.currentUser));
+    this.persistUser({ ...user, cart: [] });
   }
   
   setAuthenticated(user: user, token: string) {

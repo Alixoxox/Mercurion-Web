@@ -17,12 +17,23 @@ export class Login {
   constructor(public userService:UserService, public toastr: ToastrService, public router: Router) {}
   loginForm = loginForm;
   isLoading = false;
+  isAdmin = false;
+  checkAdmin(){ 
+  if (this.router.url.includes('admin/login')) {
+    this.isAdmin=true;
+
+    console.log('Currently on products');
+  }
+  }
+
   onLogin() {
     const email = this.loginForm.get('email')?.value;
     const password = this.loginForm.get('password')?.value;
     if (!email || !password) return;
-
     this.isLoading = true;
+
+    
+    
     this.userService.login(email, password).subscribe({
       next: (res) => {
         const user = {
@@ -30,6 +41,7 @@ export class Login {
           name: res.UserData.name,
           email: res.UserData.email,
           password: '',
+          role: res.UserData.role,
           cart: []
         };
         this.userService.setAuthenticated(user, res.Token);

@@ -51,7 +51,7 @@
 
       <div class="flex items-center gap-2 text-sm text-gray-500">
         <span class="text-yellow-500">★</span>
-        <span>{{ p.rating.rate }} / 5</span>
+        <span>{{ p.rating.rate==0 ? 5 : p.rating.rate }}</span>
         <span>({{ p.rating.count }} reviews)</span>
       </div>
 

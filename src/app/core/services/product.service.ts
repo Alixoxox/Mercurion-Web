@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map, shareReplay } from 'rxjs';
 import { Product, ProductRating, Feedback } from '../../shared/models/product';
@@ -39,6 +39,8 @@ export class ProductService {
   private http = inject(HttpClient);
   private apiUrl = process.env['NG_APP_API_URL'];
   private categories$?: Observable<string[]>;
+  products = signal<Product[]>([]);
+  categories = signal<string[]>([]);
 
   getAll(page: number, size: number): Observable<PaginatedProducts> {
     return this.http.get<RawPaginated<RawProduct>>(`${this.apiUrl}/product/all`, { params: { page, size } })

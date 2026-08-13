@@ -47,7 +47,7 @@ import { Product } from "../../../shared/models/product";
           <a [routerLink]="['/products', product.id]" class="text-lg font-bold text-gray-900 hover:text-blue-600">
             {{ product.price | currency }}
           </a>
-          <span class="text-xs text-gray-500">★ {{ product.rating.rate }} ({{ product.rating.count }})</span>
+          <span class="text-xs text-gray-500">★ {{ product.rating.rate==0 ? 5 : product.rating.rate }} ({{ product.rating.count }})</span>
         </div>
       </div>
       <div class="px-4 pb-4">

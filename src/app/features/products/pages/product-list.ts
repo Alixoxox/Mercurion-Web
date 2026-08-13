@@ -15,12 +15,11 @@ import { FormsModule } from "@angular/forms";
   templateUrl: "./product-list.html",
 })
 export class ProductList implements OnInit {
-  private productService = inject(ProductService);
+  public productService = inject(ProductService);
   private router=inject(Router);
   public userService=inject(UserService);
 
   toast = inject(ToastrService);
-  products = signal<Product[]>([]);
   loading = signal(true);
   error = signal<string | null>(null);
 
@@ -28,7 +27,6 @@ export class ProductList implements OnInit {
   selectedCategory = signal<string | null>(null);
   sortBy = signal('default');
   currentPage = signal(1);
-  categories = signal<string[]>([]);
   categoryOpen = signal(false);
   sortOpen = signal(false);
 
@@ -47,7 +45,7 @@ export class ProductList implements OnInit {
   });
 
   filteredProducts = computed(() => {
-    return this.products().filter(p => {
+    return this.productService.products().filter(p => {
       const matchesSearch = !this.searchTerm() || p.title.toLowerCase().includes(this.searchTerm().toLowerCase());
       return matchesSearch;
     });
@@ -86,10 +84,14 @@ export class ProductList implements OnInit {
 
   ngOnInit(): void {
     localStorage.getItem('loggedIn') === 'true' ? this.userService.loggedIn.set(true) : this.userService.loggedIn.set(false)
+    if(this.productService.products().length > 0 && this.productService.categories().length > 0){
+      this.loading.set(false);
+    this.error.set(null);
+      return;
+    }
     this.loadProducts();
-
     this.productService.getCategories().subscribe({
-      next: (data) => this.categories.set(data),
+      next: (data) => this.productService.categories.set(data),
     });
   }
 
@@ -101,7 +103,7 @@ export class ProductList implements OnInit {
     if (category) {
       this.productService.getByCategory(category).subscribe({
         next: (data) => {
-          this.products.set(data);
+          this.productService.products.set(data);
           this.loadedCategory.set(category);
           this.userService.fetchWishlist();
           done();
@@ -117,7 +119,7 @@ export class ProductList implements OnInit {
     this.productService.getAll(this.currentPage() - 1, this.PAGE_SIZE).subscribe({
       next: (res) => {
         console.log(res.content)
-        this.products.set(res.content);
+        this.productService.products.set(res.content);
         this.serverTotalPages.set(res.totalPages);
         this.loadedCategory.set(null);
         this.userService.fetchWishlist();

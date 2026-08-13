@@ -189,6 +189,7 @@ export class ProductDetail implements OnChanges {
         this.loadFeedback();
       },
       error: (err) => {
+        if (err.status === 403) return;
         const message = typeof err.error === 'string' ? err.error : err.error?.message;
         this.toast.error(message || 'Failed to submit feedback. Please try again.', 'Error', { timeOut: 3000, progressBar: true });
       },
@@ -210,9 +211,10 @@ export class ProductDetail implements OnChanges {
         this.loadFeedback();
       },
       error: (err) => {
+        this.deletingId.set(null);
+        if (err.status === 403) return;
         const message = typeof err.error === 'string' ? err.error : 'Failed to delete feedback. Please try again.';
         this.toast.error(message, 'Error', { timeOut: 3000, progressBar: true });
-        this.deletingId.set(null);
       },
     });
   }
