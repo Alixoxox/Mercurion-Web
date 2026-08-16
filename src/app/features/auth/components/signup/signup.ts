@@ -29,6 +29,7 @@ export class Signup {
           name: res.UserData.name,
           email: res.UserData.email,
           password: '',
+          role: res.UserData.role,
           cart: []
         };
         this.isLoading = false;

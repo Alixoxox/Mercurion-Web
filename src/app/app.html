@@ -2,4 +2,4 @@
 <main class="flex-1 flex flex-col pt-16">
   <router-outlet />
 </main>
-<app-footer />
+<app-footer *ngIf="!isAdminRoute()" />

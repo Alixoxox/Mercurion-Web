@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { AuthPage } from './features/auth/auth-page';
 import { authGuard } from './core/guards/auth.guard';
+import { adminGuard } from './core/guards/admin.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'products', pathMatch: 'full' },
@@ -20,6 +21,27 @@ export const routes: Routes = [
   { path: 'cart', loadComponent: () => import('./features/cart/cart').then(m => m.Cart), canActivate:[authGuard]},
   { path: 'history', loadComponent: () => import('./features/history/history').then(m => m.History), canActivate:[authGuard]},
   { path: 'checkout', loadComponent: () => import('./features/checkout/checkout').then(m => m.Checkout), canActivate:[authGuard]},
-  { path: 'admin/login',loadComponent: () => import('./features/auth/components/login/login').then(m => m.Login) },
+  {
+    path: 'admin/login',
+    component: AuthPage,
+    children: [
+      { path: '', loadComponent: () => import('./features/auth/components/login/login').then(m => m.Login) },
+    ],
+  },
+  {
+    path: 'admin',
+    loadComponent: () => import('./features/admin/pages/admin-dashboard/admin-dashboard').then(m => m.AdminDashboard),
+    canActivate: [adminGuard],
+  },
+  {
+    path: 'admin/products',
+    loadComponent: () => import('./features/admin/pages/admin-products/admin-products').then(m => m.AdminProducts),
+    canActivate: [adminGuard],
+  },
+  {
+    path: 'admin/orders',
+    loadComponent: () => import('./features/admin/pages/admin-orders/admin-orders').then(m => m.AdminOrders),
+    canActivate: [adminGuard],
+  },
   { path: '**', redirectTo: 'products' }
 ];

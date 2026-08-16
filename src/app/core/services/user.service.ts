@@ -77,8 +77,15 @@ export class UserService {
     return this.http.post<AuthResponse>(`${process.env['NG_APP_API_URL']}/users/auth/register`, { name, email, password });
   }
 
-  login(email: string, password: string): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${process.env['NG_APP_API_URL']}/users/auth/login`, { email, password });
+  login(email: string, password: string, isAdmin = false): Observable<AuthResponse> {
+    const url = isAdmin
+      ? `${process.env['NG_APP_API_URL']}/admin/auth/login`
+      : `${process.env['NG_APP_API_URL']}/users/auth/login`;
+    return this.http.post<AuthResponse>(url, { email, password });
+  }
+
+  getUserCount(): Observable<number> {
+    return this.http.get<number>(`${process.env['NG_APP_API_URL']}/users/all`);
   }
 
   rateProduct(productId: number, rating: number, comment: string, image: File | null): Observable<any> {

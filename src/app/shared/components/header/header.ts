@@ -13,4 +13,8 @@ export class Header {
   constructor(public userService:UserService){}
   cartCount=this.userService.cartCount;
 
+  isAdmin(): boolean {
+    return this.userService.loggedIn() && this.userService.currentUser()?.role === 'ADMIN';
+  }
+
 }

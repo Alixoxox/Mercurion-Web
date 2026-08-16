@@ -1,0 +1,78 @@
+<div class="p-6 max-w-6xl mx-auto">
+  <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+    <h1 class="text-2xl font-semibold text-gray-900">Products</h1>
+    <div class="flex flex-wrap items-center gap-3">
+      <input
+        type="search"
+        [ngModel]="searchTerm()"
+        (ngModelChange)="searchTerm.set($event)"
+        placeholder="Search products..."
+        class="w-full sm:w-72 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
+      <button (click)="openCreate()"
+        class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium">Add Product</button>
+      <button (click)="showBulk.set(true)"
+        class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 font-medium">Bulk Import CSV</button>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl shadow overflow-x-auto">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
+          <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stock</th>
+          <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-200">
+        <tr *ngFor="let p of filteredProducts()">
+          <td class="px-4 py-3">
+            <div class="flex items-center gap-3">
+              <img [src]="p.image" [alt]="p.title" class="w-12 h-12 object-cover rounded-lg" />
+              <div>
+                <p class="font-medium text-gray-900">{{ p.title }}</p>
+                <p class="text-sm text-gray-500 line-clamp-1">{{ p.description }}</p>
+              </div>
+            </div>
+          </td>
+          <td class="px-4 py-3 text-sm text-gray-700">{{ p.category }}</td>
+          <td class="px-4 py-3 text-sm text-gray-700">${{ p.price | number:'1.2-2' }}</td>
+          <td class="px-4 py-3">
+            <div class="flex items-center gap-2">
+              <button (click)="changeStock(p, -1)" [disabled]="p.stock === 0"
+                class="w-7 h-7 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-40">−</button>
+              <span class="w-10 text-center font-medium" [class.text-red-600]="p.stock === 0">{{ p.stock }}</span>
+              <button (click)="changeStock(p, 1)"
+                class="w-7 h-7 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-100">+</button>
+            </div>
+          </td>
+          <td class="px-4 py-3">
+            <div class="flex justify-end gap-2">
+              <button
+                (click)="openEdit(p)"
+                class="px-3 py-1.5 rounded-lg border border-blue-200 text-blue-600 hover:bg-blue-50 text-sm">Edit</button>
+              <button
+                (click)="deleteProduct(p)"
+                class="px-3 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-sm">Delete</button>
+            </div>
+          </td>
+        </tr>
+        <tr *ngIf="filteredProducts().length === 0">
+          <td colspan="5" class="px-4 py-10 text-center text-gray-500">No products found</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <app-product-form-modal
+    *ngIf="showForm()"
+    [product]="editingProduct()"
+    (close)="closeForm()"
+    (saved)="onSaved()" />
+  <app-bulk-import-modal
+    *ngIf="showBulk()"
+    (close)="showBulk.set(false)"
+    (imported)="showBulk.set(false)" />
+</div>

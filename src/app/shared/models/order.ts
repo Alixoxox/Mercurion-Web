@@ -4,6 +4,8 @@ export interface PastOrder {
   id: number;
   orderDate: string;
   totalAmount: number;
+  userName: string;
+  email: string;
   phoneNumber: string;
   city: string;
   country: string;
