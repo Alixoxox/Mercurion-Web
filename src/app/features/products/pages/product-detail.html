@@ -47,7 +47,7 @@
 
       <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight">{{ p.title }}</h1>
 
-      <p class="text-3xl font-bold text-gray-900">${{ p.price }}</p>
+      <p class="text-3xl font-bold text-gray-900">{{ p.price | currency}}</p>
 
       <div class="flex items-center gap-2 text-sm text-gray-500">
         <span class="text-yellow-500">★</span>
@@ -104,12 +104,12 @@
           <p class="text-sm text-gray-500">Please <a routerLink="/auth/login" class="text-blue-600 hover:underline">log in</a> to leave feedback.</p>
         </ng-container>
 
-        <ng-container *ngIf="userService.loggedIn() && !canReview()">
+        <ng-container *ngIf="userService.loggedIn() && !canReview() && !editingFeedback()">
           <p class="text-sm text-green-600 font-medium">You have already reviewed this product. Only one feedback per person.</p>
         </ng-container>
 
-        <ng-container *ngIf="userService.loggedIn() && canReview()">
-          <h3 class="text-lg font-semibold text-gray-900 mb-2">Leave your feedback</h3>
+        <ng-container *ngIf="userService.loggedIn() && (canReview() || editingFeedback())">
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ editingFeedback() ? 'Edit your feedback' : 'Leave your feedback' }}</h3>
 
           <div class="flex items-center gap-1 mb-4">
             <button *ngFor="let star of [1,2,3,4,5]"
@@ -138,24 +138,32 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-                {{ selectedImage() ? 'Image selected' : 'Attach image' }}
+                {{ selectedImage() ? 'Image selected' : (editingFeedback()?.feedbackImage ? 'Change image' : 'Attach image') }}
               </span>
               <input type="file" accept="image/*" (change)="onImageSelected($event)" class="hidden" />
             </label>
+            <img *ngIf="editingFeedback()?.feedbackImage && !selectedImage()" [src]="editingFeedback()?.feedbackImage" alt="Current feedback image"
+                 class="w-16 h-16 object-cover rounded-lg border border-gray-200" />
             <button *ngIf="selectedImage()" type="button" (click)="selectedImage.set(null)"
                     class="text-sm text-red-500 hover:text-red-700 cursor-pointer">Remove</button>
           </div>
 
-          <button (click)="submitFeedback()"
-                  [disabled]="submitting()"
-                  class="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-2.5 rounded-lg text-sm font-medium transition cursor-pointer">
-            {{ submitting() ? 'Submitting...' : 'Submit Feedback' }}
-          </button>
+          <div class="flex items-center gap-3">
+            <button (click)="editingFeedback() ? updateFeedback() : submitFeedback()"
+                    [disabled]="submitting()"
+                    class="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-2.5 rounded-lg text-sm font-medium transition cursor-pointer">
+              {{ submitting() ? 'Saving...' : (editingFeedback() ? 'Update Feedback' : 'Submit Feedback') }}
+            </button>
+            <button *ngIf="editingFeedback()" type="button" (click)="cancelEdit()"
+                    class="text-sm font-medium text-gray-600 border border-gray-300 hover:bg-gray-50 px-6 py-2.5 rounded-lg transition cursor-pointer">
+              Cancel
+            </button>
+          </div>
         </ng-container>
       </div>
       
-      <div *ngIf="!feedbackLoading() && orderedFeedback().length > 0" class="py-6">
-        <div *ngFor="let f of orderedFeedback()" class="relative border-b border-gray-100 pb-6 last:border-b-0 last:pb-0">
+      <div *ngIf="!feedbackLoading() && visibleFeedback().length > 0" class="py-6">
+        <div *ngFor="let f of visibleFeedback()" class="relative border-b border-gray-100 pb-6 last:border-b-0 last:pb-0">
           <div class="flex items-center justify-between py-4">
             <div class="flex items-center gap-2">
               <span class="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-sm font-semibold">
@@ -165,17 +173,27 @@
             </div>
             <span class="text-sm text-gray-400">{{ f.createdAt | date:'mediumDate' }}</span>
           </div>
-          <button *ngIf="userService.loggedIn() && f.userId === userService.currentUser()?.id"
-                  (click)="deleteFeedback(f)"
-                  [disabled]="deletingId() !== null"
-                  title="Delete your feedback"
-                  class="absolute right-0 top-12 flex items-center gap-1.5 text-sm font-medium text-red-600 border border-red-200 bg-red-50 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-1.5 rounded-lg transition cursor-pointer">
-            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-            </svg>
-            {{ deletingId() === f.id ? 'Deleting...' : 'Delete' }}
-          </button>
-          <div class="flex items-center gap-1 mb-2 text-yellow-500">
+          <div *ngIf="userService.loggedIn() && f.userId === userService.currentUser()?.id" class="absolute right-0 top-12 flex items-center gap-2">
+            <button (click)="editFeedback(f)"
+                    [disabled]="editingFeedback() !== null || deletingId() !== null"
+                    title="Edit your feedback"
+                    class="flex items-center gap-1.5 text-sm font-medium text-blue-600 border border-blue-200 bg-blue-50 hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-1.5 rounded-lg transition cursor-pointer">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+              </svg>
+              Edit
+            </button>
+            <button (click)="deleteFeedback(f)"
+                    [disabled]="deletingId() !== null"
+                    title="Delete your feedback"
+                    class="flex items-center gap-1.5 text-sm font-medium text-red-600 border border-red-200 bg-red-50 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-1.5 rounded-lg transition cursor-pointer">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+              </svg>
+              {{ deletingId() === f.id ? 'Deleting...' : 'Delete' }}
+            </button>
+          </div>
+          <div *ngIf="userService.loggedIn() && f.userId === userService.currentUser()?.id" class="flex items-center gap-1 mb-2 text-yellow-500">
             <ng-container *ngFor="let star of [1,2,3,4,5]">
               <svg *ngIf="star <= f.value" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.363-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
@@ -186,7 +204,13 @@
             </ng-container>
           </div>
           <p *ngIf="f.comment" class="text-gray-600 text-sm leading-relaxed"
-                 [class.pr-28]="userService.loggedIn() && f.userId === userService.currentUser()?.id">{{ f.comment }}</p>
+                 [class.pr-40]="userService.loggedIn() && f.userId === userService.currentUser()?.id">{{ f.comment }}</p>
+          <button *ngIf="!f.comment && userService.loggedIn() && f.userId === userService.currentUser()?.id"
+                  (click)="editFeedback(f)"
+                  [disabled]="editingFeedback() !== null || deletingId() !== null"
+                  class="text-sm font-medium text-blue-600 hover:text-blue-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+            Add comment
+          </button>
           <img *ngIf="f.feedbackImage" [src]="f.feedbackImage" [alt]="f.userName + ' feedback'" loading="lazy"
                class="mt-3 w-40 h-40 object-cover rounded-lg border border-gray-200" />
         </div>

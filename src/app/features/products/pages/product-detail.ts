@@ -33,12 +33,19 @@ export class ProductDetail implements OnChanges {
     const others = this.feedback().filter(f => f.userId !== user.id);
     return [...own, ...others];
   });
+  visibleFeedback = computed(() => {
+    const user = this.userService.currentUser();
+    return this.orderedFeedback().filter(f =>
+      (user && f.userId === user.id) || !!f.comment || !!f.feedbackImage
+    );
+  });
   feedbackLoading = signal(false);
   myRating = signal(0);
   comment = signal("");
   selectedImage = signal<File | null>(null);
   submitting = signal(false);
   deletingId = signal<number | null>(null);
+  editingFeedback = signal<Feedback | null>(null);
   private readonly MIN_LOADING_MS = 800;
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -154,6 +161,14 @@ export class ProductDetail implements OnChanges {
     });
   }
 
+  refreshProduct(id: number): void {
+    this.productService.getById(id).subscribe({
+      next: (data) => {
+        if (Number(this.id) === id && data) this.product.set(data);
+      },
+    });
+  }
+
   setRating(value: number): void {
     this.myRating.set(value);
   }
@@ -187,6 +202,7 @@ export class ProductDetail implements OnChanges {
         this.comment.set("");
         this.selectedImage.set(null);
         this.loadFeedback();
+        this.refreshProduct(productId);
       },
       error: (err) => {
         if (err.status === 403) return;
@@ -209,6 +225,7 @@ export class ProductDetail implements OnChanges {
         this.toast.success('Your feedback was deleted.', 'Success', { timeOut: 2000, progressBar: true });
         this.deletingId.set(null);
         this.loadFeedback();
+        this.refreshProduct(Number(this.id));
       },
       error: (err) => {
         this.deletingId.set(null);
@@ -216,6 +233,47 @@ export class ProductDetail implements OnChanges {
         const message = typeof err.error === 'string' ? err.error : 'Failed to delete feedback. Please try again.';
         this.toast.error(message, 'Error', { timeOut: 3000, progressBar: true });
       },
+    });
+  }
+
+  editFeedback(f: Feedback): void {
+    this.editingFeedback.set(f);
+    this.myRating.set(f.value);
+    this.comment.set(f.comment ?? "");
+    this.selectedImage.set(null);
+  }
+
+  cancelEdit(): void {
+    this.editingFeedback.set(null);
+    this.myRating.set(0);
+    this.comment.set("");
+    this.selectedImage.set(null);
+  }
+
+  updateFeedback(): void {
+    const product = this.product();
+    const current = this.editingFeedback();
+    if (!product || !current || this.submitting()) return;
+
+    if (!this.myRating()) {
+      this.toast.error('Please select a star rating', 'Validation Error', { timeOut: 2000, progressBar: true });
+      return;
+    }
+
+    this.submitting.set(true);
+    this.userService.updateRating(current.id, this.myRating(), this.comment().trim(), this.selectedImage()).subscribe({
+      next: () => {
+        this.toast.success('Feedback updated successfully!', 'Success', { timeOut: 2000, progressBar: true });
+        this.cancelEdit();
+        this.loadFeedback();
+        this.refreshProduct(product.id);
+      },
+      error: (err) => {
+        if (err.status === 403) return;
+        const message = typeof err.error === 'string' ? err.error : err.error?.message;
+        this.toast.error(message || 'Failed to update feedback. Please try again.', 'Error', { timeOut: 3000, progressBar: true });
+      },
+      complete: () => this.submitting.set(false),
     });
   }
 }

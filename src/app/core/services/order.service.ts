@@ -22,7 +22,7 @@ export class OrderService {
 
   getAllOrders(): Observable<PastOrder[]> {
     return this.http
-      .get<PageResponse<PastOrder>>(`${this.apiUrl}/orders/all`, {
+      .get<PageResponse<PastOrder>>(`${this.apiUrl}/admin/orders/all`, {
         params: { page: '0', size: '1000' },
       })
       .pipe(map((page) => page.content));
@@ -33,6 +33,6 @@ export class OrderService {
   }
 
   updateStatus(id: number, status: OrderStatus): Observable<PastOrder> {
-    return this.http.put<PastOrder>(`${this.apiUrl}/orders/status/${id}`, { status });
+    return this.http.put<PastOrder>(`${this.apiUrl}/admin/orders/status/${id}`, { status });
   }
 }

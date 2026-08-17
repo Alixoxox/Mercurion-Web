@@ -44,7 +44,7 @@ import { Product } from "../../../shared/models/product";
           </button>
         </div>
         <div class="mt-auto pt-2 flex items-center justify-between">
-          <a [routerLink]="['/products', product.id]" class="text-lg font-bold text-gray-900 hover:text-blue-600">
+          <a [routerLink]="['/products', product.id]" class="text-lg font-bold text-gray-900 hover:text-green-600">
             {{ product.price | currency }}
           </a>
           <span class="text-xs text-gray-500">★ {{ product.rating.rate==0 ? 5 : product.rating.rate }} ({{ product.rating.count }})</span>

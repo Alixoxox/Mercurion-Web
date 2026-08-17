@@ -85,7 +85,7 @@ export class UserService {
   }
 
   getUserCount(): Observable<number> {
-    return this.http.get<number>(`${process.env['NG_APP_API_URL']}/users/all`);
+    return this.http.get<number>(`${process.env['NG_APP_API_URL']}admin/users/count`);
   }
 
   rateProduct(productId: number, rating: number, comment: string, image: File | null): Observable<any> {
@@ -93,6 +93,13 @@ export class UserService {
     formData.append('rating', new Blob([JSON.stringify({ productId, rating, Comment: comment })], { type: 'application/json' }));
     if (image) formData.append('image', image);
     return this.http.post(`${process.env['NG_APP_API_URL']}/users/rate`, formData);
+  }
+
+  updateRating(ratingId: number, rating: number, comment: string, image: File | null): Observable<any> {
+    const formData = new FormData();
+    formData.append('rating', new Blob([JSON.stringify({ rating, Comment: comment })], { type: 'application/json' }));
+    if (image) formData.append('image', image);
+    return this.http.put(`${process.env['NG_APP_API_URL']}/users/complete/rating/${ratingId}`, formData);
   }
 
   sendMail(payload: { mail: string; subject: string; message: string }): Observable<any> {

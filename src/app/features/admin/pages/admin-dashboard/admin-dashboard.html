@@ -20,11 +20,11 @@
     </div>
     <div class="bg-white rounded-xl shadow p-5">
       <p class="text-sm text-gray-500">Inventory Value</p>
-      <p class="text-2xl font-semibold text-gray-900 mt-1">${{ inventoryValue() | number:'1.2-2' }}</p>
+      <p class="text-2xl font-semibold text-gray-900 mt-1">{{ inventoryValue() | currency}}</p>
     </div>
     <div class="bg-white rounded-xl shadow p-5">
       <p class="text-sm text-gray-500">Average Price</p>
-      <p class="text-2xl font-semibold text-gray-900 mt-1">${{ avgPrice() | number:'1.2-2' }}</p>
+      <p class="text-2xl font-semibold text-gray-900 mt-1">{{ avgPrice() | currency }}</p>
     </div>
     <div class="bg-white rounded-xl shadow p-5">
       <p class="text-sm text-gray-500">Out of Stock</p>
