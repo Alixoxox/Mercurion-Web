@@ -38,12 +38,15 @@ interface RawProduct {
 export class ProductService {
   private http = inject(HttpClient);
   private apiUrl = process.env['NG_APP_API_URL'];
-  private categories$?: Observable<string[]>;
   products = signal<Product[]>([]);
-  categories = signal<string[]>([]);
+  categories = signal<string[]>([ "Home","Apparel","Electronics","Office","Accessories","Kitchen","Sports", "Fitness","Footwear"]);
 
-  getAll(page: number, size: number): Observable<PaginatedProducts> {
-    return this.http.get<RawPaginated<RawProduct>>(`${this.apiUrl}/product/all`, { params: { page, size } })
+  getAll(page: number, size: number, search = '', category = '', sort = ''): Observable<PaginatedProducts> {
+    const params: Record<string, string | number> = { page, size };
+    if (search) params['search'] = search;
+    if (category) params['category'] = category.toUpperCase();
+    if (sort) params['sort'] = sort;
+    return this.http.get<RawPaginated<RawProduct>>(`${this.apiUrl}/product/all`, { params })
       .pipe(
         map(res => ({
           content: (res.content ?? []).map(p => this.mapProduct(p)),
@@ -61,18 +64,9 @@ export class ProductService {
       .pipe(map(p => (p ? this.mapProduct(p) : null)));
   }
 
-  getCategories(): Observable<string[]> {
-    if (!this.categories$) {
-      this.categories$ = this.http
-        .get<string[]>(`${this.apiUrl}/product/categories`)
-        .pipe(shareReplay(1));
-    }
-    return this.categories$;
-  }
-
   getByCategory(category: string): Observable<Product[]> {
     return this.http
-      .get<Product[]>(`${this.apiUrl}/product/category/${encodeURIComponent(category)}`)
+      .get<Product[]>(`${this.apiUrl}/product/category/${encodeURIComponent(category.toUpperCase())}`)
       .pipe(map(list => (list ?? []).map(p => this.mapProduct(p))));
   }
 

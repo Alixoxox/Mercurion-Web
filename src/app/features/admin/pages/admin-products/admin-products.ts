@@ -27,6 +27,7 @@ export class AdminProducts {
 
   filteredProducts = computed(() => {
     const q = this.searchTerm().toLowerCase().trim();
+    console.log(this.products());
     if (!q) return this.products();
     return this.products().filter(
       p => p.title.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)
@@ -59,13 +60,17 @@ export class AdminProducts {
   }
 
   changeStock(p: Product, delta: number): void {
-    this.adminService.updateStock(p.id, delta);
-    this.toast.info('Stock updated');
+    this.adminService.updateStock(p.id, delta).subscribe({
+      next: () => this.toast.info('Stock updated'),
+      error: () => this.toast.error('Failed to update stock'),
+    });
   }
 
   deleteProduct(p: Product): void {
     if (!confirm(`Delete "${p.title}"?`)) return;
-    this.adminService.delete(p.id);
-    this.toast.success('Product deleted');
+    this.adminService.delete(p.id).subscribe({
+      next: () => this.toast.success('Product deleted'),
+      error: () => this.toast.error('Failed to delete product'),
+    });
   }
 }

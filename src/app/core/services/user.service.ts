@@ -85,7 +85,7 @@ export class UserService {
   }
 
   getUserCount(): Observable<number> {
-    return this.http.get<number>(`${process.env['NG_APP_API_URL']}admin/users/count`);
+    return this.http.get<number>(`${process.env['NG_APP_API_URL']}/admin/users/count`);
   }
 
   rateProduct(productId: number, rating: number, comment: string, image: File | null): Observable<any> {

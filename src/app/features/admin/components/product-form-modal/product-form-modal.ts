@@ -1,8 +1,10 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { CommonModule } from '@angular/common';
+import { CommonModule, TitleCasePipe } from '@angular/common';
+import { ToastrService } from 'ngx-toastr';
 import { AdminProductService } from '../../../../core/services/admin-product.service';
 import { Product } from '../../../../shared/models/product';
+import { ProductService } from 'src/app/core/services/product.service';
 
 @Component({
   selector: 'app-product-form-modal',
@@ -21,20 +23,23 @@ export class ProductFormModal implements OnInit {
     stock: [0, [Validators.required, Validators.min(0)]],
     category: ['', Validators.required],
     image: [''],
-    description: [''],
+    description: ['',[Validators.max(254)]],
   });
 
-  categories = ['Electronics', 'Apparel', 'Home', 'Books', 'Sports', 'Beauty'];
+  saving = false;
+  selectedImage: File | null = null;
+  previewImage: string | null = null;
 
-  constructor(private fb: FormBuilder, private adminService: AdminProductService) {}
-
+  constructor(private fb: FormBuilder, private adminService: AdminProductService, private productService : ProductService) {}
+  private toast = inject(ToastrService);
+  categories=this.productService.categories();
   ngOnInit(): void {
     if (this.product) {
       this.form.patchValue({
         title: this.product.title,
         price: this.product.price,
         stock: this.product.stock,
-        category: this.product.category,
+        category: new TitleCasePipe().transform(this.product.category),
         image: this.product.image,
         description: this.product.description,
       });
@@ -42,31 +47,41 @@ export class ProductFormModal implements OnInit {
   }
 
   onSubmit(): void {
-    if (this.form.invalid) return;
+    if (this.form.invalid || this.saving) return;
     const v = this.form.getRawValue();
     const payload = {
       title: v.title.trim(),
       price: Number(v.price),
       stock: Number(v.stock),
-      category: v.category.trim(),
-      image: v.image.trim() || 'https://picsum.photos/seed/placeholder/400',
+      category: v.category.trim().toUpperCase(),
+      image: this.selectedImage ? '' : (v.image ?? '').trim(),
       description: v.description.trim(),
     };
-    if (this.product) {
-      this.adminService.update({ ...this.product, ...payload });
-    } else {
-      this.adminService.create(payload);
-    }
-    this.saved.emit();
+    this.saving = true;
+    const request = this.product
+      ? this.adminService.update({ ...this.product, ...payload }, this.selectedImage)
+      : this.adminService.create(payload, this.selectedImage);
+    request.subscribe({
+      next: () => {
+        this.saving = false;
+        this.toast.success('Product saved');
+        this.saved.emit();
+      },
+      error: (err) => {
+        this.saving = false;
+        this.toast.error(err.error?.message ?? 'Failed to save product', 'Error');
+      },
+    });
   }
 
   onImageSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
+    this.selectedImage = file;
     const reader = new FileReader();
     reader.onload = () => {
-      this.form.patchValue({ image: String(reader.result ?? '') });
+      this.previewImage = String(reader.result ?? '');
     };
     reader.readAsDataURL(file);
     input.value = '';

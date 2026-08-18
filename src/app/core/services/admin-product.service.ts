@@ -1,10 +1,8 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, finalize, throwError } from 'rxjs';
 import { Product } from '../../shared/models/product';
-import { DUMMY_PRODUCTS } from '../../shared/data/dummy-products';
-
-const STORAGE_KEY = 'admin_products';
+import { ProductService } from './product.service';
 
 type ProductDraft = Omit<Product, 'id' | 'rating'>;
 
@@ -12,62 +10,75 @@ type ProductDraft = Omit<Product, 'id' | 'rating'>;
 export class AdminProductService {
   private http = inject(HttpClient);
   private apiUrl = process.env['NG_APP_API_URL'];
+  private productService = inject(ProductService);
   products = signal<Product[]>([]);
+  loading = signal(false);
+  private loaded = false;
 
   load(): void {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      try {
-        this.products.set(JSON.parse(raw));
-        return;
-      } catch {
-        // corrupted storage -> reseed below
-      }
-    }
-    this.products.set([...DUMMY_PRODUCTS]);
-    this.persist();
+    if (this.loaded || this.loading()) return;
+    this.loading.set(true);
+    this.fetchAll(0, []);
   }
 
-  create(draft: ProductDraft): Product {
-    const product: Product = { ...draft, id: this.nextId(), rating: { rate: 0, count: 0 } };
-    this.products.set([...this.products(), product]);
-    this.persist();
-    return product;
+  private fetchAll(page: number, acc: Product[]): void {
+    this.productService.getAll(page, 100).subscribe({
+      next: (res) => {
+        const all = [...acc, ...res.content];
+        if (page + 1 < res.totalPages) {
+          this.fetchAll(page + 1, all);
+        } else {
+          this.products.set(all);
+          this.loaded = true;
+          this.loading.set(false);
+        }
+      },
+      error: (err) => {
+        console.error('Failed to load products', err);
+        this.loading.set(false);
+      },
+    });
   }
 
-  update(product: Product): void {
-    this.products.set(this.products().map(p => (p.id === product.id ? product : p)));
-    this.persist();
+  refresh(): void {
+    this.loaded = false;
+    this.load();
   }
 
-  delete(id: number): void {
-    this.products.set(this.products().filter(p => p.id !== id));
-    this.persist();
-  }
-
-  updateStock(id: number, delta: number): void {
-    this.products.set(
-      this.products().map(p => (p.id === id ? { ...p, stock: Math.max(0, p.stock + delta) } : p))
+  create(draft: ProductDraft, imageFile?: File | null): Observable<Product> {
+    const formData = new FormData();
+    formData.append('product', new Blob([JSON.stringify(draft)], { type: 'application/json' }));
+    if (imageFile) formData.append('image', imageFile, imageFile.name);
+    return this.http.post<Product>(`${this.apiUrl}/admin/product/create`, formData).pipe(
+      finalize(() => this.refresh())
     );
-    this.persist();
+  }
+
+  update(product: Product, imageFile?: File | null): Observable<Product> {
+    const { rating, ...body } = product;
+    const formData = new FormData();
+    formData.append('product', new Blob([JSON.stringify(body)], { type: 'application/json' }));
+    if (imageFile) formData.append('image', imageFile, imageFile.name);
+    return this.http.put<Product>(`${this.apiUrl}/admin/product/edit/${product.id}`, formData).pipe(
+      finalize(() => this.refresh())
+    );
+  }
+
+  delete(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/product/del/${id}`).pipe(
+      finalize(() => this.refresh())
+    );
+  }
+
+  updateStock(id: number, delta: number): Observable<Product> {
+    const product = this.products().find(p => p.id === id);
+    if (!product) return throwError(() => new Error('Product not found'));
+    return this.update({ ...product, stock: Math.max(0, product.stock + delta) });
   }
 
   bulkUpload(file: File): Observable<any> {
     const formData = new FormData();
     formData.append('file', file);
-    return this.http.post(`${this.apiUrl}/product/bulk`, formData);
-  }
-
-  private nextId(): number {
-    const ids = this.products().map(p => p.id);
-    return ids.length ? Math.max(...ids) + 1 : 1;
-  }
-
-  private persist(): void {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.products()));
-    } catch {
-      // storage unavailable — keep in-memory state only
-    }
+    return this.http.post(`${this.apiUrl}/admin/products/bulk`, formData, { responseType: 'text' });
   }
 }

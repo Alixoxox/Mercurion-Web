@@ -1,12 +1,12 @@
 import { Component, EventEmitter, inject, Input, Output } from "@angular/core";
-import { CurrencyPipe, NgIf } from "@angular/common";
+import { CurrencyPipe, NgIf, TitleCasePipe } from "@angular/common";
 import { RouterLink } from "@angular/router";
 import { Product } from "../../../shared/models/product";
 
 @Component({
   selector: "app-product-card",
   standalone: true,
-  imports: [RouterLink, CurrencyPipe, NgIf],
+  imports: [RouterLink, CurrencyPipe, NgIf, TitleCasePipe],
   host: { class: "block h-full" },
   template: `
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition group h-full flex flex-col">
@@ -20,7 +20,7 @@ import { Product } from "../../../shared/models/product";
         <div class="flex items-start justify-between gap-2">
           <a [routerLink]="['/products', product.id]" class="min-w-0 flex flex-col">
             <span class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded self-start">
-              {{ product.category }}
+              {{ product.category | titlecase }}
             </span>
             <h3 class="mt-2 text-sm font-medium text-gray-900 line-clamp-2 leading-snug hover:text-blue-600">
               {{ product.title }}

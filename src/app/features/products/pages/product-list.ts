@@ -1,4 +1,5 @@
-import { Component, computed, OnInit, inject, signal } from "@angular/core";
+import { Component, computed, OnInit, OnDestroy, inject, signal } from "@angular/core";
+import { Subject, debounceTime, distinctUntilChanged, takeUntil } from "rxjs";
 import { ProductService } from "../../../core/services/product.service";
 import { Product } from "../../../shared/models/product";
 import { ProductCard } from "../components/product-card";
@@ -14,10 +15,10 @@ import { FormsModule } from "@angular/forms";
   imports: [CommonModule, ProductCard, FormsModule],
   templateUrl: "./product-list.html",
 })
-export class ProductList implements OnInit {
+export class ProductList implements OnInit, OnDestroy {
   public productService = inject(ProductService);
-  private router=inject(Router);
-  public userService=inject(UserService);
+  private router = inject(Router);
+  public userService = inject(UserService);
 
   toast = inject(ToastrService);
   loading = signal(true);
@@ -38,96 +39,84 @@ export class ProductList implements OnInit {
     { value: 'name-desc', label: 'Name: Z-A' },
   ];
 
+  readonly PAGE_SIZE = 8;
+  private readonly MIN_LOADING_MS = 400;
+  serverTotalPages = signal(1);
+  serverTotalElements = signal(0);
+
+  private search$ = new Subject<string>();
+  private destroy$ = new Subject<void>();
+
   totalSpent = computed(() => {
     const user = this.userService.currentUser();
     if (!user) return 0;
     return user.cart.reduce((sum, item) => sum + item.price, 0);
   });
 
-  filteredProducts = computed(() => {
-    return this.productService.products().filter(p => {
-      const matchesSearch = !this.searchTerm() || p.title.toLowerCase().includes(this.searchTerm().toLowerCase());
-      return matchesSearch;
-    });
+  totalPages = computed(() => Math.max(1, this.serverTotalPages()));
+
+  hasActiveFilters = computed(() =>
+    !!this.searchTerm() || !!this.selectedCategory() || this.sortBy() !== 'default'
+  );
+
+  pageNumbers = computed(() => {
+    const total = this.totalPages();
+    const current = this.currentPage();
+    const window = 5;
+    let start = Math.max(1, current - 2);
+    let end = Math.min(total, start + window - 1);
+    start = Math.max(1, end - window + 1);
+    const pages: number[] = [];
+    for (let i = start; i <= end; i++) pages.push(i);
+    return pages;
   });
 
-  sortedProducts = computed(() => {
-    const sorted = [...this.filteredProducts()];
-    switch (this.sortBy()) {
-      case 'price-asc': return sorted.sort((a, b) => a.price - b.price);
-      case 'price-desc': return sorted.sort((a, b) => b.price - a.price);
-      case 'name-asc': return sorted.sort((a, b) => a.title.localeCompare(b.title));
-      case 'name-desc': return sorted.sort((a, b) => b.title.localeCompare(a.title));
-      default: return sorted;
-    }
+  rangeLabel = computed(() => {
+    const total = this.serverTotalElements();
+    if (!total) return '';
+    const from = (this.currentPage() - 1) * this.PAGE_SIZE + 1;
+    const to = Math.min(this.currentPage() * this.PAGE_SIZE, total);
+    return `${from}–${to} of ${total}`;
   });
-
-  totalPages = computed(() => {
-    if (this.selectedCategory()) {
-      return Math.max(1, Math.ceil(this.sortedProducts().length / this.PAGE_SIZE));
-    }
-    return Math.max(1, this.serverTotalPages());
-  });
-
-  paginatedProducts = computed(() => {
-    if (!this.selectedCategory()) {
-      return this.sortedProducts();
-    }
-    const start = (this.currentPage() - 1) * this.PAGE_SIZE;
-    return this.sortedProducts().slice(start, start + this.PAGE_SIZE);
-  });
-
-  readonly PAGE_SIZE = 8;
-  private readonly MIN_LOADING_MS = 800;
-  serverTotalPages = signal(1);
-  private loadedCategory = signal<string | null | undefined>(undefined);
 
   ngOnInit(): void {
-    localStorage.getItem('loggedIn') === 'true' ? this.userService.loggedIn.set(true) : this.userService.loggedIn.set(false)
-    if(this.productService.products().length > 0 && this.productService.categories().length > 0){
-      this.loading.set(false);
-    this.error.set(null);
-      return;
-    }
+    localStorage.getItem('loggedIn') === 'true' ? this.userService.loggedIn.set(true) : this.userService.loggedIn.set(false);
+    this.search$
+      .pipe(debounceTime(300), distinctUntilChanged(), takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.currentPage.set(1);
+        this.loadProducts();
+      });
     this.loadProducts();
-    this.productService.getCategories().subscribe({
-      next: (data) => this.productService.categories.set(data),
-    });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   private loadProducts(): void {
     const startTime = Date.now();
-    const done = () => this.delayLoadingDone(startTime);
-    const category = this.selectedCategory();
-
-    if (category) {
-      this.productService.getByCategory(category).subscribe({
-        next: (data) => {
-          this.productService.products.set(data);
-          this.loadedCategory.set(category);
-          this.userService.fetchWishlist();
-          done();
-        },
-        error: () => {
-          this.error.set("Failed to load products. Please try again.");
-          done();
-        },
-      });
-      return;
-    }
-
-    this.productService.getAll(this.currentPage() - 1, this.PAGE_SIZE).subscribe({
+    this.loading.set(true);
+    const sort = this.sortBy() === 'default' ? '' : this.sortBy();
+    this.productService.getAll(
+      this.currentPage() - 1,
+      this.PAGE_SIZE,
+      this.searchTerm().trim(),
+      this.selectedCategory() ?? '',
+      sort
+    ).subscribe({
       next: (res) => {
-        console.log(res.content)
         this.productService.products.set(res.content);
-        this.serverTotalPages.set(res.totalPages);
-        this.loadedCategory.set(null);
+        this.serverTotalPages.set(res.totalPages ?? 1);
+        this.serverTotalElements.set(res.totalElements ?? 0);
+        this.error.set(null);
         this.userService.fetchWishlist();
-        done();
+        this.delayLoadingDone(startTime);
       },
       error: () => {
         this.error.set("Failed to load products. Please try again.");
-        done();
+        this.delayLoadingDone(startTime);
       },
     });
   }
@@ -138,11 +127,14 @@ export class ProductList implements OnInit {
     setTimeout(() => this.loading.set(false), remaining);
   }
 
+  onSearchChange(value: string): void {
+    this.searchTerm.set(value);
+    this.search$.next(value.trim());
+  }
+
   onFilterChange(): void {
     this.currentPage.set(1);
-    if (this.loadedCategory() !== this.selectedCategory()) {
-      this.loadProducts();
-    }
+    this.loadProducts();
   }
 
   clearFilters(): void {
@@ -160,9 +152,7 @@ export class ProductList implements OnInit {
   goToPage(page: number): void {
     if (page >= 1 && page <= this.totalPages()) {
       this.currentPage.set(page);
-      if (!this.selectedCategory()) {
-        this.loadProducts();
-      }
+      this.loadProducts();
     }
   }
 

@@ -14,8 +14,6 @@ export interface PastOrder {
   status: OrderStatus;
 }
 
-
-
 export interface OrderItem {
   id: number;
   title: string;

@@ -217,8 +217,6 @@ export class ProductDetail implements OnChanges {
     const user = this.userService.currentUser();
     if (!f.id || !user || f.userId !== user.id) return;
     if (this.deletingId() !== null) return;
-    if (!window.confirm('Delete your feedback for this product?')) return;
-
     this.deletingId.set(f.id);
     this.userService.removeRating(f.id).subscribe({
       next: () => {

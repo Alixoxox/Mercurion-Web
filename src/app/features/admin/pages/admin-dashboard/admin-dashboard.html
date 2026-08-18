@@ -52,7 +52,7 @@
           <ul class="space-y-2.5">
             <li *ngFor="let s of pieSegments()" class="flex items-center gap-2.5 text-sm">
               <span class="w-3 h-3 rounded-full shrink-0" [style.background]="s.color"></span>
-              <span class="text-gray-700">{{ s.name }}</span>
+              <span class="text-gray-700">{{ s.name | titlecase }}</span>
               <span class="ml-auto font-medium text-gray-900">{{ s.count }}</span>
             </li>
           </ul>

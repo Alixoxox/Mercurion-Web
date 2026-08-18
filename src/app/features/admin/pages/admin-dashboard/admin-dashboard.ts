@@ -66,8 +66,8 @@ export class AdminDashboard {
   ngOnInit(): void {
     this.adminService.load();
     this.userService.getUserCount().subscribe({
-      next: (count) => this.userCount.set(count),
-      error: () => this.userCount.set(0),
+      next: (count) => {this.userCount.set(count); console.log("User count updated" + count) },
+      error:(err) => {console.error("Failed to fetch user count", err, "User count remains at", this.userCount())}
     });
   }
 }

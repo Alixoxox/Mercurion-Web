@@ -15,12 +15,12 @@
       </div>
       <input type="search" id="search"
              class="block w-full ps-9 pe-3 py-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400"
-             placeholder="Search products..." [ngModel]="searchTerm()" (ngModelChange)="searchTerm.set($event); onFilterChange()" />
+             placeholder="Search products..." [ngModel]="searchTerm()" (ngModelChange)="onSearchChange($event)" />
     </div>
 
     <div class="relative inline-block shrink-0" (mouseenter)="categoryOpen.set(true)" (mouseleave)="categoryOpen.set(false)">
       <button type="button" class="inline-flex items-center justify-center gap-x-1.5 rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-200 hover:bg-gray-50 transition cursor-pointer">
-        <span class="flex-shrink-0">{{ selectedCategory() || 'All Categories' }}</span>
+        <span class="flex-shrink-0">{{ (selectedCategory() || 'All Categories') | titlecase }}</span>
         <svg class="-mr-1 h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
           <path clip-rule="evenodd" fill-rule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" />
         </svg>
@@ -32,7 +32,7 @@
         </button>
         <button *ngFor="let cat of productService.categories()" (click)="selectedCategory.set(cat); onFilterChange(); categoryOpen.set(false)"
                 class="block w-full px-4 py-2 text-left text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition cursor-pointer whitespace-nowrap">
-          {{ cat }}
+          {{ cat | titlecase }}
         </button>
       </div>
     </div>
@@ -81,11 +81,11 @@
     </button>
   </div>
 
-  <div *ngIf="!loading() && !error() &&  productService.products().length === 0" class="text-center py-16">
+  <div *ngIf="!loading() && !error() && productService.products().length === 0 && !hasActiveFilters()" class="text-center py-16">
     <p class="text-gray-500 text-lg">No products found.</p>
   </div>
 
-  <div *ngIf="!loading() && !error() && productService.products().length > 0 && sortedProducts().length === 0" class="text-center py-16">
+  <div *ngIf="!loading() && !error() && productService.products().length === 0 && hasActiveFilters()" class="text-center py-16">
     <p class="text-gray-500 text-lg mb-4">No products match your filters.</p>
     <button (click)="clearFilters()"
             class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition cursor-pointer">
@@ -93,9 +93,9 @@
     </button>
   </div>
 
-  <div *ngIf="!loading() && !error() && sortedProducts().length > 0">
+  <div *ngIf="!loading() && !error() && productService.products().length > 0">
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      <app-product-card *ngFor="let product of paginatedProducts() "
+      <app-product-card *ngFor="let product of productService.products() "
       [product]="product"
       [isLoggedIn]="userService.loggedIn()"
       [isInCart]="isInCart(product)"
@@ -106,18 +106,30 @@
       (like)="onToggleLike($event)"/>
     </div>
 
-    <div class="flex items-center justify-center gap-4 mt-8">
-      <button (click)="goToPage(currentPage() - 1)" [disabled]="currentPage() === 1"
-              class="px-4 py-2 text-sm font-medium rounded-lg transition cursor-pointer
-                     bg-gray-100 hover:bg-gray-200 text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
-        &larr; Previous
-      </button>
-      <span class="text-sm text-gray-600 font-medium">Page {{ currentPage() }} of {{ totalPages() }}</span>
-      <button (click)="goToPage(currentPage() + 1)" [disabled]="currentPage() === totalPages()"
-              class="px-4 py-2 text-sm font-medium rounded-lg transition cursor-pointer
-                     bg-gray-100 hover:bg-gray-200 text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
-        Next &rarr;
-      </button>
+    <div class="flex flex-col items-center gap-3 mt-8">
+      <span class="text-sm text-gray-600 font-medium">{{ rangeLabel() }}</span>
+      <div class="flex items-center gap-2">
+        <button (click)="goToPage(currentPage() - 1)" [disabled]="currentPage() === 1"
+                class="px-3 py-2 text-sm font-medium rounded-lg transition cursor-pointer
+                       bg-gray-100 hover:bg-gray-200 text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
+          &larr;
+        </button>
+        <button *ngFor="let pg of pageNumbers()" (click)="goToPage(pg)"
+                [class.bg-blue-600]="pg === currentPage()"
+                [class.text-white]="pg === currentPage()"
+                [class.bg-gray-100]="pg !== currentPage()"
+                [class.hover:bg-gray-200]="pg !== currentPage()"
+                [class.text-gray-700]="pg !== currentPage()"
+                class="min-w-9 px-3 py-2 text-sm font-medium rounded-lg transition cursor-pointer">
+          {{ pg }}
+        </button>
+        <button (click)="goToPage(currentPage() + 1)" [disabled]="currentPage() === totalPages()"
+                class="px-3 py-2 text-sm font-medium rounded-lg transition cursor-pointer
+                       bg-gray-100 hover:bg-gray-200 text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
+          &rarr;
+        </button>
+      </div>
+      <span class="text-xs text-gray-400">Page {{ currentPage() }} of {{ totalPages() }}</span>
     </div>
   </div>
 </div>
