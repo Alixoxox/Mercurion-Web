@@ -32,3 +32,32 @@ export interface Feedback {
   userName: string;
   userId: number;
 }
+
+export interface PaginatedProducts {
+  content: Product[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
+}
+export interface RawPaginated<T> {
+  content: T[];
+  page: {
+    size: number;
+    number: number;
+    totalElements: number;
+    totalPages: number;
+  };
+}
+export interface RawProduct {
+  id: number;
+  title: string;
+  description: string;
+  category: string;
+  image: string;
+  stock: number;
+  price: number;
+  rate?: number;
+  count?: number;
+  ratings?: ProductRating[];
+}

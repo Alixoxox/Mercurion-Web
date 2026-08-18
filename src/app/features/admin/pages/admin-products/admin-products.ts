@@ -11,7 +11,7 @@ import { BulkImportModal } from '../../components/bulk-import-modal/bulk-import-
 @Component({
   selector: 'app-admin-products',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ProductFormModal, BulkImportModal],
+  imports: [CommonModule, FormsModule, ProductFormModal, BulkImportModal],
   templateUrl: './admin-products.html',
 })
 export class AdminProducts {

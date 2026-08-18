@@ -22,3 +22,10 @@ export interface OrderItem {
   quantity: number;
   priceAtPurchase: number;
 }
+export interface PageResponse<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
+}

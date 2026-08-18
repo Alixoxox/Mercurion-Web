@@ -1,15 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { map, Observable } from 'rxjs';
-import { OrderItem, OrderStatus, PastOrder } from '../../shared/models/order';
-
-interface PageResponse<T> {
-  content: T[];
-  totalElements: number;
-  totalPages: number;
-  number: number;
-  size: number;
-}
+import { OrderItem, OrderStatus, PageResponse, PastOrder } from '../../shared/models/order';
 
 @Injectable({ providedIn: 'root' })
 export class OrderService {

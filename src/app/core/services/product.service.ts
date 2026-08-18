@@ -1,38 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map, shareReplay } from 'rxjs';
-import { Product, ProductRating, Feedback } from '../../shared/models/product';
-
-export interface PaginatedProducts {
-  content: Product[];
-  totalElements: number;
-  totalPages: number;
-  number: number;
-  size: number;
-}
-
-interface RawPaginated<T> {
-  content: T[];
-  page: {
-    size: number;
-    number: number;
-    totalElements: number;
-    totalPages: number;
-  };
-}
-
-interface RawProduct {
-  id: number;
-  title: string;
-  description: string;
-  category: string;
-  image: string;
-  stock: number;
-  price: number;
-  rate?: number;
-  count?: number;
-  ratings?: ProductRating[];
-}
+import { Observable, map } from 'rxjs';
+import { Feedback, PaginatedProducts, Product, RawPaginated, RawProduct } from '../../shared/models/product';
 
 @Injectable({ providedIn: 'root' })
 export class ProductService {
