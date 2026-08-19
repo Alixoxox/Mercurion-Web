@@ -1,16 +1,17 @@
-import { Component, OnChanges, SimpleChanges, inject, signal, Input } from "@angular/core";
+import { Component, OnChanges, SimpleChanges, computed, inject, signal, Input } from "@angular/core";
 import { Router, RouterLink } from "@angular/router";
 import { ProductService } from "../../../core/services/product.service";
 import { UserService } from "../../../core/services/user.service";
-import { Product } from "../../../shared/models/product";
+import { Product, Feedback } from "../../../shared/models/product";
 import { CommonModule } from "@angular/common";
 import { ProductCard } from "../components/product-card";
 import { ToastrService } from "ngx-toastr";
+import { FormsModule } from "@angular/forms";
 
 @Component({
   selector: "app-product-detail",
   standalone: true,
-  imports: [CommonModule, RouterLink, ProductCard],
+  imports: [CommonModule, RouterLink, ProductCard, FormsModule],
   templateUrl: "./product-detail.html",
 })
 export class ProductDetail implements OnChanges {
@@ -24,6 +25,27 @@ export class ProductDetail implements OnChanges {
   loading = signal(true);
   relatedLoading = signal(false);
   error = signal<string | null>(null);
+  feedback = signal<Feedback[]>([]);
+  orderedFeedback = computed(() => {
+    const user = this.userService.currentUser();
+    if (!user) return this.feedback();
+    const own = this.feedback().filter(f => f.userId === user.id);
+    const others = this.feedback().filter(f => f.userId !== user.id);
+    return [...own, ...others];
+  });
+  visibleFeedback = computed(() => {
+    const user = this.userService.currentUser();
+    return this.orderedFeedback().filter(f =>
+      (user && f.userId === user.id) || !!f.comment || !!f.feedbackImage
+    );
+  });
+  feedbackLoading = signal(false);
+  myRating = signal(0);
+  comment = signal("");
+  selectedImage = signal<File | null>(null);
+  submitting = signal(false);
+  deletingId = signal<number | null>(null);
+  editingFeedback = signal<Feedback | null>(null);
   private readonly MIN_LOADING_MS = 800;
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -38,7 +60,12 @@ export class ProductDetail implements OnChanges {
 
       this.product.set(undefined);
       this.relatedProducts.set([]);
+      this.feedback.set([]);
+      this.myRating.set(0);
+      this.comment.set("");
+      this.selectedImage.set(null);
       this.loadProduct(id);
+      this.loadFeedback();
     }
   }
 
@@ -47,6 +74,7 @@ export class ProductDetail implements OnChanges {
 
     this.productService.getById(id).subscribe({
       next: (data) => {
+        if (Number(this.id) !== id) return;
         this.product.set(data ?? null);
         this.delayLoadingDone(startTime);
         if (data) {
@@ -86,16 +114,164 @@ export class ProductDetail implements OnChanges {
       this.toast.error("Please login to add products to cart");
       return;
     }
+    if (this.cartCount(product.id) >= product.stock) {
+      this.toast.info('No more stock available', 'Cart', { timeOut: 2000, progressBar: true });
+      return;
+    }
     this.userService.addToCart(product);
     this.toast.info("Product added to cart", "Success", { timeOut: 2000, progressBar: true });
   }
 
+  cartCount(productId: number): number {
+    return this.userService.currentUser()?.cart.filter(i => i.id === productId).length ?? 0;
+  }
+
+  isStockLimitReached(product: Product): boolean {
+    return product.stock > 0 && this.cartCount(product.id) >= product.stock;
+  }
+
   deleteFromCart(product: Product): void {
-    this.userService.deleteFromCart(product.id);
-    this.toast.info("Product removed from cart", "Success", { timeOut: 2000, progressBar: true });
+    this.userService.removeOneFromCart(product.id);
+    this.toast.info("Item removed from cart", "Success", { timeOut: 2000, progressBar: true });
   }
 
   isInCart(product: Product): boolean {
     return this.userService.currentUser()?.cart.some(item => item.id === product.id) ?? false;
+  }
+
+  canReview = () => {
+    const user = this.userService.currentUser();
+    return !!user && !this.feedback().some(f => f.userId === user.id);
+  };
+
+  loadFeedback(): void {
+    const id = Number(this.id);
+    if (!id) return;
+    this.feedbackLoading.set(true);
+    this.productService.getFeedback(id).subscribe({
+      next: (data) => {
+        if (Number(this.id) === id) this.feedback.set(data ?? []);
+      },
+      error: () => {
+        if (Number(this.id) === id) this.feedback.set([]);
+      },
+      complete: () => {
+        if (Number(this.id) === id) this.feedbackLoading.set(false);
+      },
+    });
+  }
+
+  refreshProduct(id: number): void {
+    this.productService.getById(id).subscribe({
+      next: (data) => {
+        if (Number(this.id) === id && data) this.product.set(data);
+      },
+    });
+  }
+
+  setRating(value: number): void {
+    this.myRating.set(value);
+  }
+
+  onImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    if (file && !file.type.startsWith('image/')) {
+      this.toast.error('Please select an image file', 'Invalid File', { timeOut: 2000, progressBar: true });
+      input.value = '';
+      return;
+    }
+    this.selectedImage.set(file);
+  }
+
+  submitFeedback(): void {
+    const productId = this.product()?.id;
+    const user = this.userService.currentUser();
+    if (!productId || !user || this.submitting()) return;
+
+    if (!this.myRating()) {
+      this.toast.error('Please select a star rating', 'Validation Error', { timeOut: 2000, progressBar: true });
+      return;
+    }
+
+    this.submitting.set(true);
+    this.userService.rateProduct(productId, this.myRating(), this.comment().trim(), this.selectedImage()).subscribe({
+      next: () => {
+        this.toast.success('Feedback submitted successfully!', 'Success', { timeOut: 2000, progressBar: true });
+        this.myRating.set(0);
+        this.comment.set("");
+        this.selectedImage.set(null);
+        this.loadFeedback();
+        this.refreshProduct(productId);
+      },
+      error: (err) => {
+        if (err.status === 403) return;
+        const message = typeof err.error === 'string' ? err.error : err.error?.message;
+        this.toast.error(message || 'Failed to submit feedback. Please try again.', 'Error', { timeOut: 3000, progressBar: true });
+      },
+      complete: () => this.submitting.set(false),
+    });
+  }
+
+  deleteFeedback(f: Feedback): void {
+    const user = this.userService.currentUser();
+    if (!f.id || !user || f.userId !== user.id) return;
+    if (this.deletingId() !== null) return;
+    this.deletingId.set(f.id);
+    this.userService.removeRating(f.id).subscribe({
+      next: () => {
+        this.toast.success('Your feedback was deleted.', 'Success', { timeOut: 2000, progressBar: true });
+        this.deletingId.set(null);
+        this.loadFeedback();
+        this.refreshProduct(Number(this.id));
+      },
+      error: (err) => {
+        this.deletingId.set(null);
+        if (err.status === 403) return;
+        const message = typeof err.error === 'string' ? err.error : 'Failed to delete feedback. Please try again.';
+        this.toast.error(message, 'Error', { timeOut: 3000, progressBar: true });
+      },
+    });
+  }
+
+  editFeedback(f: Feedback): void {
+    this.editingFeedback.set(f);
+    this.myRating.set(f.value);
+    this.comment.set(f.comment ?? "");
+    this.selectedImage.set(null);
+  }
+
+  cancelEdit(): void {
+    this.editingFeedback.set(null);
+    this.myRating.set(0);
+    this.comment.set("");
+    this.selectedImage.set(null);
+  }
+
+  updateFeedback(): void {
+    const product = this.product();
+    const current = this.editingFeedback();
+    if (!product || !current || this.submitting()) return;
+
+    if (!this.myRating()) {
+      this.toast.error('Please select a star rating', 'Validation Error', { timeOut: 2000, progressBar: true });
+      return;
+    }
+
+    this.submitting.set(true);
+    this.userService.updateRating(current.id, this.myRating(), this.comment().trim(), this.selectedImage()).subscribe({
+      next: () => {
+        this.toast.success('Feedback updated successfully!', 'Success', { timeOut: 2000, progressBar: true });
+        this.cancelEdit();
+        this.loadFeedback();
+        this.refreshProduct(product.id);
+      },
+      error: (err) => {
+        if (err.status === 403) return;
+        const message = typeof err.error === 'string' ? err.error : err.error?.message;
+        this.toast.error(message || 'Failed to update feedback. Please try again.', 'Error', { timeOut: 3000, progressBar: true });
+      },
+      complete: () => this.submitting.set(false),
+    });
   }
 }

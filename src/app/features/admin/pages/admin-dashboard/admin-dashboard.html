@@ -1,0 +1,81 @@
+<div class="p-6 max-w-6xl mx-auto">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-semibold text-gray-900">Dashboard</h1>
+    <a routerLink="/admin/products" class="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-900 transition cursor-pointer shrink-0">
+      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+      </svg>
+      Manage Products
+    </a>
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+    <div class="bg-white rounded-xl shadow p-5">
+      <p class="text-sm text-gray-500">Total Users</p>
+      <p class="text-2xl font-semibold text-gray-900 mt-1">{{ userCount() }}</p>
+    </div>
+    <div class="bg-white rounded-xl shadow p-5">
+      <p class="text-sm text-gray-500">Total Stock Units</p>
+      <p class="text-2xl font-semibold text-gray-900 mt-1">{{ totalStock() }}</p>
+    </div>
+    <div class="bg-white rounded-xl shadow p-5">
+      <p class="text-sm text-gray-500">Inventory Value</p>
+      <p class="text-2xl font-semibold text-gray-900 mt-1">{{ inventoryValue() | currency}}</p>
+    </div>
+    <div class="bg-white rounded-xl shadow p-5">
+      <p class="text-sm text-gray-500">Average Price</p>
+      <p class="text-2xl font-semibold text-gray-900 mt-1">{{ avgPrice() | currency }}</p>
+    </div>
+    <div class="bg-white rounded-xl shadow p-5">
+      <p class="text-sm text-gray-500">Out of Stock</p>
+      <p class="text-2xl font-semibold mt-1" [class.text-red-600]="outOfStockCount() > 0">{{ outOfStockCount() }}</p>
+    </div>
+    <div class="bg-white rounded-xl shadow p-5">
+      <p class="text-sm text-gray-500">Low Stock (≤ 5)</p>
+      <p class="text-2xl font-semibold mt-1" [class.text-amber-600]="lowStockCount() > 0">{{ lowStockCount() }}</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <div class="bg-white rounded-xl shadow p-5">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Categories</h2>
+      <ng-container *ngIf="categories().length; else noCategories">
+        <div class="flex flex-wrap items-center gap-8">
+          <div class="relative w-44 h-44 rounded-full shrink-0" [style.background]="pieGradient()">
+            <div class="absolute inset-5 bg-white rounded-full flex items-center justify-center">
+              <div class="text-center">
+                <p class="text-2xl font-semibold text-gray-900">{{ totalProducts() }}</p>
+                <p class="text-xs text-gray-500">Products</p>
+              </div>
+            </div>
+          </div>
+          <ul class="space-y-2.5">
+            <li *ngFor="let s of pieSegments()" class="flex items-center gap-2.5 text-sm">
+              <span class="w-3 h-3 rounded-full shrink-0" [style.background]="s.color"></span>
+              <span class="text-gray-700">{{ s.name | titlecase }}</span>
+              <span class="ml-auto font-medium text-gray-900">{{ s.count }}</span>
+            </li>
+          </ul>
+        </div>
+      </ng-container>
+      <ng-template #noCategories>
+        <p class="text-sm text-gray-500">No categories yet</p>
+      </ng-template>
+    </div>
+
+    <div class="bg-white rounded-xl shadow p-5">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Out of Stock</h2>
+      <ng-container *ngIf="outOfStockProducts().length; else allInStock">
+        <ul class="divide-y divide-gray-100">
+          <li *ngFor="let p of outOfStockProducts()" class="py-2 flex items-center justify-between">
+            <span class="text-sm text-gray-900">{{ p.title }}</span>
+            <a routerLink="/admin/products" class="text-sm text-blue-600 hover:text-blue-700">Restock</a>
+          </li>
+        </ul>
+      </ng-container>
+      <ng-template #allInStock>
+        <p class="text-sm text-gray-500">All products in stock</p>
+      </ng-template>
+    </div>
+  </div>
+</div>

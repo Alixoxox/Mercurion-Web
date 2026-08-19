@@ -1,4 +1,4 @@
-import { Component, computed, ElementRef, inject, ViewChild } from '@angular/core';
+import { Component, computed, ElementRef, inject, OnInit, signal, ViewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
@@ -13,14 +13,23 @@ import { ToastrService } from 'ngx-toastr';
   standalone: true,
   templateUrl: './checkout.html',
 })
-export class Checkout {
+export class Checkout implements OnInit {
   private userService = inject(UserService);
   private toast = inject(ToastrService);
 
   @ViewChild('successDialog') successDialog!: ElementRef<HTMLDialogElement>;
 
+  ngOnInit(): void {
+    const user = this.userService.currentUser();
+    if (user) {
+      this.checkoutForm.patchValue({ fullName: user.name, email: user.email });
+      this.checkoutForm.get('fullName')?.disable();
+      this.checkoutForm.get('email')?.disable();
+    }
+  }
   orderNumber = '';
   totalAmount = 0;
+  placing = signal(false);
 
   checkoutForm = checkoutFormGroup;
 
@@ -52,11 +61,32 @@ export class Checkout {
       this.toast.error('Please fill all required fields correctly', 'Validation Error', { timeOut: 2000, progressBar: true });
       return;
     }
-    this.toast.success("Order Placed Successfully!")
-    this.orderNumber = this.userService.generateOrderNumber();
-    this.totalAmount = this.grandTotal();
+    if (this.placing()) return;
 
-    this.userService.clearCart();
-    this.successDialog.nativeElement.showModal();
+    const payload = {
+      phoneNumber: this.checkoutForm.get('phoneNumber')?.value ?? '',
+      address: this.checkoutForm.get('address')?.value ?? '',
+      city: this.checkoutForm.get('city')?.value ?? '',
+      country: this.checkoutForm.get('country')?.value ?? '',
+      postalCode: this.checkoutForm.get('postalCode')?.value ?? '',
+      products: this.cartItems().map(item => ({ id: item.product.id, quantity: item.quantity })),
+    };
+
+    this.placing.set(true);
+    this.userService.purchaseOrder(payload).subscribe({
+      next: (order: any) => {
+        this.placing.set(false);
+        this.orderNumber = order?.id ?? `MEZN-${order.id}`;
+        this.totalAmount = order?.totalAmount ?? this.grandTotal();
+        this.userService.clearCart();
+        this.successDialog.nativeElement.showModal();
+      },
+      error: (err) => {
+        this.placing.set(false);
+        if (err.status === 403) return;
+        const message = typeof err.error === 'string' ? err.error : 'Failed to place order. Please try again.';
+        this.toast.error(message, 'Error', { timeOut: 3000, progressBar: true });
+      },
+    });
   }
 }
