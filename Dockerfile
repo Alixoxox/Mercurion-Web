@@ -9,4 +9,4 @@ COPY . .
 
 RUN npm run build
 
-CMD ["npx", "http-server", "dist/ecommerce-app-v16", "-p", "80"]
+CMD ["npx", "http-server", "dist/ecommerce-app-v16", "-p", "4200"]
