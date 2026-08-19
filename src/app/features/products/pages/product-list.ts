@@ -1,4 +1,4 @@
-import { Component, computed, OnInit, OnDestroy, inject, signal } from "@angular/core";
+import { Component, computed, ElementRef, HostListener, OnInit, OnDestroy, ViewChild, inject, signal } from "@angular/core";
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from "rxjs";
 import { ProductService } from "../../../core/services/product.service";
 import { Product } from "../../../shared/models/product";
@@ -30,6 +30,17 @@ export class ProductList implements OnInit, OnDestroy {
   currentPage = signal(1);
   categoryOpen = signal(false);
   sortOpen = signal(false);
+
+  @ViewChild('categoryWrap') categoryWrap?: ElementRef<HTMLDivElement>;
+  @ViewChild('sortWrap') sortWrap?: ElementRef<HTMLDivElement>;
+
+  @HostListener('document:click', ['$event.target'])
+  onDocumentClick(target: EventTarget | null): void {
+    const el = target as HTMLElement | null;
+    if (!el) return;
+    if (!this.categoryWrap?.nativeElement.contains(el)) this.categoryOpen.set(false);
+    if (!this.sortWrap?.nativeElement.contains(el)) this.sortOpen.set(false);
+  }
 
   sortOptions = [
     { value: 'default', label: 'Default' },

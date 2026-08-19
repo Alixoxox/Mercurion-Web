@@ -65,7 +65,7 @@ export class AdminProductService {
   }
 
   delete(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/product/del/${id}`).pipe(
+    return this.http.delete<void>(`${this.apiUrl}/admin/product/del/${id}`).pipe(
       finalize(() => this.refresh())
     );
   }

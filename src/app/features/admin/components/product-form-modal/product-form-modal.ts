@@ -1,4 +1,5 @@
 import { Component, EventEmitter, Input, OnInit, Output, inject } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule, TitleCasePipe } from '@angular/common';
 import { ToastrService } from 'ngx-toastr';
@@ -23,7 +24,7 @@ export class ProductFormModal implements OnInit {
     stock: [0, [Validators.required, Validators.min(0)]],
     category: ['', Validators.required],
     image: [''],
-    description: ['',[Validators.max(254)]],
+    description: ['', [Validators.maxLength(254)]],
   });
 
   saving = false;
@@ -41,7 +42,7 @@ export class ProductFormModal implements OnInit {
         stock: this.product.stock,
         category: new TitleCasePipe().transform(this.product.category),
         image: this.product.image,
-        description: this.product.description,
+        description: this.product.description ?? '',
       });
     }
   }
@@ -55,7 +56,7 @@ export class ProductFormModal implements OnInit {
       stock: Number(v.stock),
       category: v.category.trim().toUpperCase(),
       image: this.selectedImage ? '' : (v.image ?? '').trim(),
-      description: v.description.trim(),
+      description: (v.description ?? '').trim(),
     };
     this.saving = true;
     const request = this.product
@@ -69,7 +70,11 @@ export class ProductFormModal implements OnInit {
       },
       error: (err) => {
         this.saving = false;
-        this.toast.error(err.error?.message ?? 'Failed to save product', 'Error');
+        const body = (err as HttpErrorResponse)?.error;
+        const message = typeof body === 'string' && body
+          ? body
+          : (body as { message?: string } | null)?.message ?? 'Failed to save product';
+        this.toast.error(message, 'Error');
       },
     });
   }

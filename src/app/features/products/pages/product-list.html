@@ -18,14 +18,14 @@
              placeholder="Search products..." [ngModel]="searchTerm()" (ngModelChange)="onSearchChange($event)" />
     </div>
 
-    <div class="relative inline-block shrink-0" (mouseenter)="categoryOpen.set(true)" (mouseleave)="categoryOpen.set(false)">
-      <button type="button" class="inline-flex items-center justify-center gap-x-1.5 rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-200 hover:bg-gray-50 transition cursor-pointer">
+    <div #categoryWrap class="relative inline-block shrink-0" (mouseenter)="categoryOpen.set(true)" (mouseleave)="categoryOpen.set(false)">
+      <button type="button" (click)="categoryOpen.set(!categoryOpen())" class="inline-flex items-center justify-center gap-x-1.5 rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-200 hover:bg-gray-50 transition cursor-pointer">
         <span class="flex-shrink-0">{{ (selectedCategory() || 'All Categories') | titlecase }}</span>
         <svg class="-mr-1 h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
           <path clip-rule="evenodd" fill-rule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" />
         </svg>
       </button>
-      <div *ngIf="categoryOpen()" class="absolute right-0 z-20 mt-2 w-56 origin-top-right rounded-md bg-white py-1 ring-1 ring-inset ring-gray-200 shadow-lg">
+      <div *ngIf="categoryOpen()" class="absolute left-0 sm:right-0 sm:left-auto z-20 mt-2 w-56 origin-top-left sm:origin-top-right rounded-md bg-white py-1 ring-1 ring-inset ring-gray-200 shadow-lg">
         <button (click)="selectedCategory.set(null); onFilterChange(); categoryOpen.set(false)"
                 class="block w-full px-4 py-2 text-left text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition cursor-pointer whitespace-nowrap">
           All Categories
@@ -37,14 +37,14 @@
       </div>
     </div>
 
-    <div class="relative inline-block shrink-0" (mouseenter)="sortOpen.set(true)" (mouseleave)="sortOpen.set(false)">
-      <button type="button" class="inline-flex items-center justify-center gap-x-1.5 rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-200 hover:bg-gray-50 transition cursor-pointer">
+    <div #sortWrap class="relative inline-block shrink-0" (mouseenter)="sortOpen.set(true)" (mouseleave)="sortOpen.set(false)">
+      <button type="button" (click)="sortOpen.set(!sortOpen())" class="inline-flex items-center justify-center gap-x-1.5 rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-200 hover:bg-gray-50 transition cursor-pointer">
         <span class="flex-shrink-0">{{ getSortLabel() }}</span>
         <svg class="-mr-1 h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
           <path clip-rule="evenodd" fill-rule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" />
         </svg>
       </button>
-      <div *ngIf="sortOpen()" class="absolute right-0 z-20 mt-2 w-56 origin-top-right rounded-md bg-white py-1 ring-1 ring-inset ring-gray-200 shadow-lg">
+      <div *ngIf="sortOpen()" class="absolute left-0 sm:right-0 sm:left-auto z-20 mt-2 w-56 origin-top-left sm:origin-top-right rounded-md bg-white py-1 ring-1 ring-inset ring-gray-200 shadow-lg">
         <button *ngFor="let opt of sortOptions" (click)="sortBy.set(opt.value); onFilterChange(); sortOpen.set(false)"
                 class="block w-full px-4 py-2 text-left text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition cursor-pointer whitespace-nowrap">
           {{ opt.label }}
