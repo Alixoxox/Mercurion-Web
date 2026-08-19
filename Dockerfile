@@ -3,10 +3,13 @@ FROM node:20-alpine
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm install
+
+RUN npm ci
 
 COPY . .
 
 RUN npm run build
 
-CMD ["npx", "http-server", "dist/ecommerce-app-v16", "-p", "4200"]
+RUN npm install -g http-server
+
+CMD ["http-server", "dist/ecommerce-app-v16", "-p", "4200"]
