@@ -89,7 +89,7 @@
 
   <div *ngIf="!loading() && !error() && product()" class="mt-16">
     <div class="bg-white rounded-xl border border-gray-200 p-6 sm:p-8">
-      <h2 class="text-xl font-bold text-gray-900 ">Customer Feedback</h2>
+      <h2 class="text-xl font-bold text-gray-900 ">Customer Feedback <span class="ml-1 text-sm font-normal text-gray-400">({{ orderedFeedback().length }})</span></h2>
 
       <div *ngIf="feedbackLoading()" class="flex items-center justify-center gap-3 py-5">
         <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -162,56 +162,67 @@
         </ng-container>
       </div>
       
-      <div *ngIf="!feedbackLoading() && visibleFeedback().length > 0" class="py-6">
-        <div *ngFor="let f of visibleFeedback()" class="border-b border-gray-100 pb-6 last:border-b-0 last:pb-0">
-          <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-4">
-            <div class="flex items-center gap-2">
-              <span class="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-sm font-semibold">
-                {{ f.userName.charAt(0).toUpperCase() }}
+      <div *ngIf="!feedbackLoading() && orderedFeedback().length === 0" class="py-6 text-center">
+        <p class="text-sm text-gray-500">No feedback yet. Be the first to review this product!</p>
+      </div>
+
+      <div *ngIf="!feedbackLoading() && orderedFeedback().length > 0" class="py-6">
+        <div *ngFor="let f of orderedFeedback()" class="border-b border-gray-100 pb-6 last:border-b-0 last:pb-0">
+          <div class="flex flex-wrap items-start justify-between gap-x-4 gap-y-3 py-4">
+            <div class="flex items-center gap-3 min-w-0">
+              <span class="w-9 h-9 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-sm font-semibold shrink-0">
+                {{ f.userName?.charAt(0)?.toUpperCase() || 'U' }}
               </span>
-              <span class="font-medium text-gray-900">{{ f.userName }}</span>
-            </div>
-            <div class="flex items-center gap-3">
-              <span class="text-sm text-gray-400">{{ f.createdAt | date:'mediumDate' }}</span>
-              <div *ngIf="userService.loggedIn() && f.userId === userService.currentUser()?.id" class="flex items-center gap-2">
-            <button (click)="editFeedback(f)"
-                    [disabled]="editingFeedback() !== null || deletingId() !== null"
-                    title="Edit your feedback"
-                    class="flex items-center gap-1.5 text-sm font-medium text-blue-600 border border-blue-200 bg-blue-50 hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-1.5 rounded-lg transition cursor-pointer">
-              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-              </svg>
-              Edit
-            </button>
-            <button (click)="deleteFeedback(f)"
-                    [disabled]="deletingId() !== null"
-                    title="Delete your feedback"
-                    class="flex items-center gap-1.5 text-sm font-medium text-red-600 border border-red-200 bg-red-50 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-1.5 rounded-lg transition cursor-pointer">
-              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-              </svg>
-              {{ deletingId() === f.id ? 'Deleting...' : 'Delete' }}
-            </button>
+              <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="font-medium text-gray-900">{{ f.userName || 'Anonymous' }}</span>
+                  <span *ngIf="userService.loggedIn() && f.userId === userService.currentUser()?.id"
+                        class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">You</span>
+                </div>
+                <div class="flex items-center gap-2 mt-0.5">
+                  <span class="flex items-center gap-0.5" [attr.aria-label]="f.value + ' out of 5 stars'">
+                    <ng-container *ngFor="let star of [1,2,3,4,5]">
+                      <svg *ngIf="star <= f.value" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-yellow-500" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.363-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                      </svg>
+                      <svg *ngIf="star > f.value" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-300" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.363-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                      </svg>
+                    </ng-container>
+                  </span>
+                  <span class="text-sm text-gray-400">{{ f.createdAt | date:'mediumDate' }}</span>
+                </div>
               </div>
             </div>
-          <div *ngIf="userService.loggedIn() && f.userId === userService.currentUser()?.id" class="flex items-center gap-1 mb-2 text-yellow-500">
-            <ng-container *ngFor="let star of [1,2,3,4,5]">
-              <svg *ngIf="star <= f.value" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.363-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-              </svg>
-              <svg *ngIf="star > f.value" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-300" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.363-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-              </svg>
-            </ng-container>
+            <div *ngIf="userService.loggedIn() && f.userId === userService.currentUser()?.id" class="flex items-center gap-2">
+              <button (click)="editFeedback(f)"
+                      [disabled]="editingFeedback() !== null || deletingId() !== null"
+                      title="Edit your feedback"
+                      class="flex items-center gap-1.5 text-sm font-medium text-blue-600 border border-blue-200 bg-blue-50 hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-1.5 rounded-lg transition cursor-pointer">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+                Edit
+              </button>
+              <button (click)="deleteFeedback(f)"
+                      [disabled]="deletingId() !== null"
+                      title="Delete your feedback"
+                      class="flex items-center gap-1.5 text-sm font-medium text-red-600 border border-red-200 bg-red-50 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-1.5 rounded-lg transition cursor-pointer">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+                {{ deletingId() === f.id ? 'Deleting...' : 'Delete' }}
+              </button>
+            </div>
           </div>
           <p *ngIf="f.comment" class="text-gray-600 text-sm leading-relaxed">{{ f.comment }}</p>
           <button *ngIf="!f.comment && userService.loggedIn() && f.userId === userService.currentUser()?.id"
                   (click)="editFeedback(f)"
                   [disabled]="editingFeedback() !== null || deletingId() !== null"
-                  class="text-sm font-medium text-blue-600 hover:text-blue-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                  class="mt-2 text-sm font-medium text-blue-600 hover:text-blue-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
             Add comment
           </button>
-          <img *ngIf="f.feedbackImage" [src]="f.feedbackImage" [alt]="f.userName + ' feedback'" loading="lazy"
+          <img *ngIf="f.feedbackImage" [src]="f.feedbackImage" [alt]="(f.userName || 'Anonymous') + ' feedback'" loading="lazy"
                class="mt-3 w-40 h-40 object-cover rounded-lg border border-gray-200" />
         </div>
       </div>

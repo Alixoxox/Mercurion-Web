@@ -33,12 +33,6 @@ export class ProductDetail implements OnChanges {
     const others = this.feedback().filter(f => f.userId !== user.id);
     return [...own, ...others];
   });
-  visibleFeedback = computed(() => {
-    const user = this.userService.currentUser();
-    return this.orderedFeedback().filter(f =>
-      (user && f.userId === user.id) || !!f.comment || !!f.feedbackImage
-    );
-  });
   feedbackLoading = signal(false);
   myRating = signal(0);
   comment = signal("");

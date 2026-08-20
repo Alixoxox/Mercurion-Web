@@ -2,7 +2,7 @@ import { Product } from "./product";
 
 export interface user {
     id:number,
-    name: string,
+    name?: string | null,
     password: string,
     email: string,
     role: string,

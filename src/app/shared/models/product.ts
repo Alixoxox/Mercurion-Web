@@ -29,7 +29,7 @@ export interface Feedback {
   comment: string | null;
   createdAt: string;
   feedbackImage: string | null;
-  userName: string;
+  userName: string | null;
   userId: number;
 }
 
