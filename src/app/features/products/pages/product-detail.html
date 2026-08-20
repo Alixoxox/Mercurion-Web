@@ -163,17 +163,17 @@
       </div>
       
       <div *ngIf="!feedbackLoading() && visibleFeedback().length > 0" class="py-6">
-        <div *ngFor="let f of visibleFeedback()" class="relative border-b border-gray-100 pb-6 last:border-b-0 last:pb-0">
-          <div class="flex items-center justify-between py-4">
+        <div *ngFor="let f of visibleFeedback()" class="border-b border-gray-100 pb-6 last:border-b-0 last:pb-0">
+          <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-4">
             <div class="flex items-center gap-2">
               <span class="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-sm font-semibold">
                 {{ f.userName.charAt(0).toUpperCase() }}
               </span>
               <span class="font-medium text-gray-900">{{ f.userName }}</span>
             </div>
-            <span class="text-sm text-gray-400">{{ f.createdAt | date:'mediumDate' }}</span>
-          </div>
-          <div *ngIf="userService.loggedIn() && f.userId === userService.currentUser()?.id" class="absolute right-0 top-12 flex items-center gap-2">
+            <div class="flex items-center gap-3">
+              <span class="text-sm text-gray-400">{{ f.createdAt | date:'mediumDate' }}</span>
+              <div *ngIf="userService.loggedIn() && f.userId === userService.currentUser()?.id" class="flex items-center gap-2">
             <button (click)="editFeedback(f)"
                     [disabled]="editingFeedback() !== null || deletingId() !== null"
                     title="Edit your feedback"
@@ -192,7 +192,8 @@
               </svg>
               {{ deletingId() === f.id ? 'Deleting...' : 'Delete' }}
             </button>
-          </div>
+              </div>
+            </div>
           <div *ngIf="userService.loggedIn() && f.userId === userService.currentUser()?.id" class="flex items-center gap-1 mb-2 text-yellow-500">
             <ng-container *ngFor="let star of [1,2,3,4,5]">
               <svg *ngIf="star <= f.value" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
@@ -203,8 +204,7 @@
               </svg>
             </ng-container>
           </div>
-          <p *ngIf="f.comment" class="text-gray-600 text-sm leading-relaxed"
-                 [class.pr-40]="userService.loggedIn() && f.userId === userService.currentUser()?.id">{{ f.comment }}</p>
+          <p *ngIf="f.comment" class="text-gray-600 text-sm leading-relaxed">{{ f.comment }}</p>
           <button *ngIf="!f.comment && userService.loggedIn() && f.userId === userService.currentUser()?.id"
                   (click)="editFeedback(f)"
                   [disabled]="editingFeedback() !== null || deletingId() !== null"

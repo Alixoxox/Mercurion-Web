@@ -1,6 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, finalize, throwError } from 'rxjs';
+import { Observable, finalize, tap, throwError } from 'rxjs';
 import { Product } from '../../shared/models/product';
 import { ProductService } from './product.service';
 
@@ -66,7 +66,7 @@ export class AdminProductService {
 
   delete(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/admin/product/del/${id}`).pipe(
-      finalize(() => this.refresh())
+      tap(() => this.products.update(list => list.filter(p => p.id !== id)))
     );
   }
 
