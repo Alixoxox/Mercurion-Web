@@ -88,18 +88,18 @@ export class UserService {
     return this.http.get<number>(`${process.env['NG_APP_API_URL']}/admin/users/count`);
   }
 
-  rateProduct(productId: number, rating: number, comment: string, image: File | null): Observable<any> {
+  rateProduct(productId: number, rating: number, comment: string, image: File | null): Observable<string> {
     const formData = new FormData();
     formData.append('rating', new Blob([JSON.stringify({ productId, rating, Comment: comment })], { type: 'application/json' }));
     if (image) formData.append('image', image);
-    return this.http.post(`${process.env['NG_APP_API_URL']}/users/rate`, formData);
+    return this.http.post(`${process.env['NG_APP_API_URL']}/users/rate`, formData, { responseType: 'text' });
   }
 
-  updateRating(ratingId: number, rating: number, comment: string, image: File | null): Observable<any> {
+  updateRating(ratingId: number, rating: number, comment: string, image: File | null): Observable<string> {
     const formData = new FormData();
     formData.append('rating', new Blob([JSON.stringify({ rating, Comment: comment })], { type: 'application/json' }));
     if (image) formData.append('image', image);
-    return this.http.put(`${process.env['NG_APP_API_URL']}/users/complete/rating/${ratingId}`, formData);
+    return this.http.put(`${process.env['NG_APP_API_URL']}/users/complete/rating/${ratingId}`, formData, { responseType: 'text' });
   }
 
   sendMail(payload: { mail: string; subject: string; message: string }): Observable<any> {
@@ -133,6 +133,17 @@ export class UserService {
     localStorage.removeItem('loggedInUser');
     localStorage.removeItem('token');
     this.route.navigate(['auth/login']);
+  }
+
+  isTokenValid(): boolean {
+    const token = this.token();
+    if (!token) return false;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+      return typeof payload.exp === 'number' && Date.now() < payload.exp * 1000;
+    } catch {
+      return false;
+    }
   }
 
   wishlistIds = signal<Set<number>>(new Set());

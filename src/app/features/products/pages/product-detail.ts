@@ -19,6 +19,7 @@ export class ProductDetail implements OnChanges {
   private router = inject(Router);
   private productService = inject(ProductService);
   public userService = inject(UserService);
+  localFeedbackImages = signal<Record<number, string>>({});
   private toast = inject(ToastrService);
   product = signal<Product | null | undefined>(undefined);
   relatedProducts = signal<Product[]>([]);
@@ -37,8 +38,11 @@ export class ProductDetail implements OnChanges {
   myRating = signal(0);
   comment = signal("");
   selectedImage = signal<File | null>(null);
+  selectedImageUrl = signal<string | null>(null);
+  
+  myLocalFeedbackImage = signal<string | null>(null);
+
   submitting = signal(false);
-  deletingId = signal<number | null>(null);
   editingFeedback = signal<Feedback | null>(null);
   private readonly MIN_LOADING_MS = 800;
 
@@ -137,24 +141,60 @@ export class ProductDetail implements OnChanges {
     const user = this.userService.currentUser();
     return !!user && !this.feedback().some(f => f.userId === user.id);
   };
-
   loadFeedback(): void {
     const id = Number(this.id);
     if (!id) return;
+  
     this.feedbackLoading.set(true);
+  
     this.productService.getFeedback(id).subscribe({
       next: (data) => {
-        if (Number(this.id) === id) this.feedback.set(data ?? []);
+        if (Number(this.id) !== id) return;
+      
+        const feedback = data ?? [];
+        const pendingImage = this.pendingLocalFeedbackImage();
+        const currentUserId = this.userService.currentUser()?.id;
+      
+        let newLocalImages = {
+          ...this.localFeedbackImages()
+        };
+      
+        if (pendingImage && currentUserId) {
+          const myFeedback = feedback.find(
+            f => f.userId === currentUserId && !f.feedbackImage
+          );
+      
+          if (myFeedback?.id) {
+            newLocalImages[myFeedback.id] = pendingImage;
+            this.localFeedbackImages.set(newLocalImages);
+      
+            this.pendingLocalFeedbackImage.set(null);
+          }
+        }
+      
+        this.feedback.set(
+          feedback.map(f => ({
+            ...f,
+            feedbackImage:
+              f.feedbackImage ||
+              newLocalImages[f.id]
+          }))
+        );
       },
+  
       error: () => {
-        if (Number(this.id) === id) this.feedback.set([]);
+        if (Number(this.id) === id) {
+          this.feedback.set([]);
+        }
       },
+  
       complete: () => {
-        if (Number(this.id) === id) this.feedbackLoading.set(false);
+        if (Number(this.id) === id) {
+          this.feedbackLoading.set(false);
+        }
       },
     });
   }
-
   refreshProduct(id: number): void {
     this.productService.getById(id).subscribe({
       next: (data) => {
@@ -170,61 +210,123 @@ export class ProductDetail implements OnChanges {
   onImageSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0] ?? null;
-    if (file && !file.type.startsWith('image/')) {
-      this.toast.error('Please select an image file', 'Invalid File', { timeOut: 2000, progressBar: true });
-      input.value = '';
+  
+    if (file && !file.type.startsWith("image/")) {
+      this.toast.error("Please select an image file", "Invalid File", {
+        timeOut: 2000,
+        progressBar: true
+      });
+  
+      input.value = "";
       return;
     }
+  
+    // Revoke previous preview URL
+    const oldUrl = this.selectedImageUrl();
+  
+    if (oldUrl) {
+      URL.revokeObjectURL(oldUrl);
+    }
+  
     this.selectedImage.set(file);
+  
+    if (file) {
+      this.selectedImageUrl.set(URL.createObjectURL(file));
+    } else {
+      this.selectedImageUrl.set(null);
+    }
   }
-
+  pendingLocalFeedbackImage = signal<string | null>(null);
   submitFeedback(): void {
     const productId = this.product()?.id;
     const user = this.userService.currentUser();
+  
     if (!productId || !user || this.submitting()) return;
-
+  
     if (!this.myRating()) {
-      this.toast.error('Please select a star rating', 'Validation Error', { timeOut: 2000, progressBar: true });
+      this.toast.error(
+        'Please select a star rating',
+        'Validation Error',
+        {
+          timeOut: 2000,
+          progressBar: true
+        }
+      );
       return;
     }
-
+  
+    const localImageUrl = this.selectedImageUrl();
+  
+    if (localImageUrl) {
+      this.pendingLocalFeedbackImage.set(localImageUrl);
+    }
+  
     this.submitting.set(true);
-    this.userService.rateProduct(productId, this.myRating(), this.comment().trim(), this.selectedImage()).subscribe({
-      next: () => {
-        this.toast.success('Feedback submitted successfully!', 'Success', { timeOut: 2000, progressBar: true });
-        this.myRating.set(0);
-        this.comment.set("");
-        this.selectedImage.set(null);
-        this.loadFeedback();
-        this.refreshProduct(productId);
-      },
-      error: (err) => {
-        if (err.status === 403) return;
-        const message = typeof err.error === 'string' ? err.error : err.error?.message;
-        this.toast.error(message || 'Failed to submit feedback. Please try again.', 'Error', { timeOut: 3000, progressBar: true });
-      },
-      complete: () => this.submitting.set(false),
-    });
+  
+    this.userService
+      .rateProduct(
+        productId,
+        this.myRating(),
+        this.comment().trim(),
+        this.selectedImage()
+      )
+      .subscribe({
+        next: (message: string) => {
+          this.toast.success(
+            message?.trim() || 'Feedback submitted successfully!',
+            'Success',
+            {
+              timeOut: 2000,
+              progressBar: true
+            }
+          );
+  
+          this.myRating.set(0);
+          this.comment.set("");
+          this.selectedImage.set(null);
+          this.selectedImageUrl.set(null);
+  
+          this.loadFeedback();
+          this.refreshProduct(productId);
+        },
+  
+        error: (err) => {
+          this.pendingLocalFeedbackImage.set(null);
+  
+          if (err.status === 403) return;
+  
+          const message =
+            typeof err.error === 'string'
+              ? err.error
+              : err.error?.message;
+  
+          this.toast.error(
+            message || 'Failed to submit feedback. Please try again.',
+            'Error',
+            {
+              timeOut: 3000,
+              progressBar: true
+            }
+          );
+        },
+  
+        complete: () => {
+          this.submitting.set(false);
+        }
+      });
   }
-
   deleteFeedback(f: Feedback): void {
     const user = this.userService.currentUser();
     if (!f.id || !user || f.userId !== user.id) return;
-    if (this.deletingId() !== null) return;
-    this.deletingId.set(f.id);
+  
     this.userService.removeRating(f.id).subscribe({
       next: () => {
         this.toast.success('Your feedback was deleted.', 'Success', { timeOut: 2000, progressBar: true });
-        this.deletingId.set(null);
-        this.loadFeedback();
-        this.refreshProduct(Number(this.id));
+        this.feedback.set(this.feedback().filter(feed => feed.id !== f.id));
       },
-      error: (err) => {
-        this.deletingId.set(null);
-        if (err.status === 403) return;
-        const message = typeof err.error === 'string' ? err.error : 'Failed to delete feedback. Please try again.';
-        this.toast.error(message, 'Error', { timeOut: 3000, progressBar: true });
-      },
+      error: () => {
+        this.toast.error('Could not delete feedback.', 'Error', { timeOut: 2000 });
+      }
     });
   }
 
@@ -254,8 +356,8 @@ export class ProductDetail implements OnChanges {
 
     this.submitting.set(true);
     this.userService.updateRating(current.id, this.myRating(), this.comment().trim(), this.selectedImage()).subscribe({
-      next: () => {
-        this.toast.success('Feedback updated successfully!', 'Success', { timeOut: 2000, progressBar: true });
+      next: (message: string) => {
+        this.toast.success(message?.trim() || 'Feedback updated successfully!', 'Success', { timeOut: 2000, progressBar: true });
         this.cancelEdit();
         this.loadFeedback();
         this.refreshProduct(product.id);
@@ -267,5 +369,10 @@ export class ProductDetail implements OnChanges {
       },
       complete: () => this.submitting.set(false),
     });
+  }
+
+  ngOnDestroy(): void {
+    const url = this.selectedImageUrl();
+    if (url) URL.revokeObjectURL(url);
   }
 }

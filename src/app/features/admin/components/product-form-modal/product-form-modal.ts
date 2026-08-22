@@ -63,9 +63,9 @@ export class ProductFormModal implements OnInit {
       ? this.adminService.update({ ...this.product, ...payload }, this.selectedImage)
       : this.adminService.create(payload, this.selectedImage);
     request.subscribe({
-      next: () => {
+      next: (message: string) => {
         this.saving = false;
-        this.toast.success('Product saved');
+        this.toast.success(message?.trim() || 'Product saved');
         this.saved.emit();
       },
       error: (err) => {

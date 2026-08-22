@@ -45,21 +45,21 @@ export class AdminProductService {
     this.load();
   }
 
-  create(draft: ProductDraft, imageFile?: File | null): Observable<Product> {
+  create(draft: ProductDraft, imageFile?: File | null): Observable<string> {
     const formData = new FormData();
     formData.append('product', new Blob([JSON.stringify(draft)], { type: 'application/json' }));
     if (imageFile) formData.append('image', imageFile, imageFile.name);
-    return this.http.post<Product>(`${this.apiUrl}/admin/product/create`, formData).pipe(
+    return this.http.post(`${this.apiUrl}/admin/product/create`, formData, { responseType: 'text' }).pipe(
       finalize(() => this.refresh())
     );
   }
 
-  update(product: Product, imageFile?: File | null): Observable<Product> {
+  update(product: Product, imageFile?: File | null): Observable<string> {
     const { rating, ...body } = product;
     const formData = new FormData();
     formData.append('product', new Blob([JSON.stringify(body)], { type: 'application/json' }));
     if (imageFile) formData.append('image', imageFile, imageFile.name);
-    return this.http.put<Product>(`${this.apiUrl}/admin/product/edit/${product.id}`, formData).pipe(
+    return this.http.put(`${this.apiUrl}/admin/product/edit/${product.id}`, formData, { responseType: 'text' }).pipe(
       finalize(() => this.refresh())
     );
   }
@@ -70,7 +70,7 @@ export class AdminProductService {
     );
   }
 
-  updateStock(id: number, delta: number): Observable<Product> {
+  updateStock(id: number, delta: number): Observable<string> {
     const product = this.products().find(p => p.id === id);
     if (!product) return throwError(() => new Error('Product not found'));
     return this.update({ ...product, stock: Math.max(0, product.stock + delta) });

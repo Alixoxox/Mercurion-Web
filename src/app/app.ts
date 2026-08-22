@@ -1,8 +1,9 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Header } from './shared/components/header/header';
 import { Footer } from './shared/components/footer/footer';
+import { UserService } from './core/services/user.service';
 
 @Component({
   selector: 'app-root',
@@ -10,10 +11,11 @@ import { Footer } from './shared/components/footer/footer';
   imports: [CommonModule, RouterOutlet, Header, Footer],
   templateUrl: './app.html',
 })
-export class App {
+export class App implements OnInit {
 
   protected readonly title = signal('ecomerce-app');
   protected readonly isAdminRoute = signal(false);
+  private readonly userService = inject(UserService);
 
   constructor() {
     const router = inject(Router);
@@ -23,5 +25,11 @@ export class App {
         this.isAdminRoute.set(event.urlAfterRedirects.startsWith('/admin'));
       }
     });
+  }
+
+  ngOnInit(): void {
+    if (this.userService.token() && !this.userService.isTokenValid()) {
+      this.userService.logout();
+    }
   }
 }

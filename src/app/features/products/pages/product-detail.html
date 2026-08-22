@@ -37,7 +37,7 @@
 
   <div *ngIf="!loading() && !error() && product() as p" class="flex flex-col md:flex-row gap-8 md:gap-12">
     <div class="w-full md:w-1/2 aspect-square p-4 sm:p-8 bg-white rounded-xl border border-gray-200 flex items-center justify-center">
-      <img [src]="p.image" [alt]="p.title" loading="lazy" class="w-full h-full object-contain object-center" />
+      <img [src]="p.image" [alt]="p.title" loading="eager" class="w-full h-full object-contain object-center" />
     </div>
 
     <div class="w-full md:w-1/2 space-y-4">
@@ -142,9 +142,22 @@
               </span>
               <input type="file" accept="image/*" (change)="onImageSelected($event)" class="hidden" />
             </label>
-            <img *ngIf="editingFeedback()?.feedbackImage && !selectedImage()" [src]="editingFeedback()?.feedbackImage" alt="Current feedback image"
-                 class="w-16 h-16 object-cover rounded-lg border border-gray-200" />
-            <button *ngIf="selectedImage()" type="button" (click)="selectedImage.set(null)"
+          <!-- Show local selected image preview first -->
+          <img *ngIf="selectedImage()" [src]="selectedImageUrl()!" alt="Selected feedback image"
+               class="w-16 h-16 object-cover rounded-lg border border-gray-200" />
+          <!-- Show stored feedback image from API when editing and no local selection -->
+          <img *ngIf="editingFeedback()?.feedbackImage && !selectedImage()" [src]="editingFeedback()?.feedbackImage"
+               class="w-16 h-16 object-cover rounded-lg border border-gray-200" />
+
+          <!-- Show stored feedback image from API when not editing and no local selection -->
+          <ng-container *ngFor="let f of orderedFeedback()">
+            <img *ngIf="f.feedbackImage || (f.userId === userService.currentUser()?.id && myLocalFeedbackImage())"
+            [src]="f.feedbackImage || myLocalFeedbackImage()"
+            [alt]="(f.userName || 'Anonymous') + ' feedback'"
+            loading="lazy"
+            class="mt-3 w-40 h-40 object-cover rounded-lg border border-gray-200" />
+          </ng-container>
+          <button *ngIf="selectedImage()" type="button" (click)="selectedImage.set(null)"
                     class="text-sm text-red-500 hover:text-red-700 cursor-pointer">Remove</button>
           </div>
 
@@ -196,7 +209,7 @@
             </div>
             <div *ngIf="userService.loggedIn() && f.userId === userService.currentUser()?.id" class="flex items-center gap-2">
               <button (click)="editFeedback(f)"
-                      [disabled]="editingFeedback() !== null || deletingId() !== null"
+                      [disabled]="editingFeedback() !== null"
                       title="Edit your feedback"
                       class="flex items-center gap-1.5 text-sm font-medium text-blue-600 border border-blue-200 bg-blue-50 hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-1.5 rounded-lg transition cursor-pointer">
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -205,29 +218,26 @@
                 Edit
               </button>
               <button (click)="deleteFeedback(f)"
-                      [disabled]="deletingId() !== null"
-                      title="Delete your feedback"
-                      class="flex items-center gap-1.5 text-sm font-medium text-red-600 border border-red-200 bg-red-50 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-1.5 rounded-lg transition cursor-pointer">
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                </svg>
-                {{ deletingId() === f.id ? 'Deleting...' : 'Delete' }}
-              </button>
-            </div>
-          </div>
-          <p *ngIf="f.comment" class="text-gray-600 text-sm leading-relaxed">{{ f.comment }}</p>
-          <button *ngIf="!f.comment && userService.loggedIn() && f.userId === userService.currentUser()?.id"
-                  (click)="editFeedback(f)"
-                  [disabled]="editingFeedback() !== null || deletingId() !== null"
-                  class="mt-2 text-sm font-medium text-blue-600 hover:text-blue-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-            Add comment
-          </button>
-          <img *ngIf="f.feedbackImage" [src]="f.feedbackImage" [alt]="(f.userName || 'Anonymous') + ' feedback'" loading="lazy"
-               class="mt-3 w-40 h-40 object-cover rounded-lg border border-gray-200" />
-        </div>
+              title="Delete your feedback"
+              class="flex items-center gap-1.5 text-sm font-medium text-red-600 border border-red-200 bg-red-50 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-1.5 rounded-lg transition cursor-pointer">
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+        </svg>
+        Delete
+      </button>
       </div>
-
-      
+      </div>
+      <p *ngIf="f.comment" class="text-gray-600 text-sm leading-relaxed">{{ f.comment }}</p>
+      <button *ngIf="!f.comment && userService.loggedIn() && f.userId === userService.currentUser()?.id"
+              (click)="editFeedback(f)"
+              [disabled]="editingFeedback() !== null"
+              class="mt-2 text-sm font-medium text-blue-600 hover:text-blue-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+        Add comment
+      </button>
+      <img *ngIf="f.feedbackImage" [src]="f.feedbackImage" [alt]="(f.userName || 'Anonymous') + ' feedback'" loading="lazy"
+           class="mt-3 w-40 h-40 object-cover rounded-lg border border-gray-200" />
+      </div>
+      </div>
     </div>
   </div>
 
