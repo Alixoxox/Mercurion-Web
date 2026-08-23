@@ -40,8 +40,6 @@ export class ProductDetail implements OnChanges {
   selectedImage = signal<File | null>(null);
   selectedImageUrl = signal<string | null>(null);
   
-  myLocalFeedbackImage = signal<string | null>(null);
-
   submitting = signal(false);
   editingFeedback = signal<Feedback | null>(null);
   private readonly MIN_LOADING_MS = 800;

@@ -149,14 +149,6 @@
           <img *ngIf="editingFeedback()?.feedbackImage && !selectedImage()" [src]="editingFeedback()?.feedbackImage"
                class="w-16 h-16 object-cover rounded-lg border border-gray-200" />
 
-          <!-- Show stored feedback image from API when not editing and no local selection -->
-          <ng-container *ngFor="let f of orderedFeedback()">
-            <img *ngIf="f.feedbackImage || (f.userId === userService.currentUser()?.id && myLocalFeedbackImage())"
-            [src]="f.feedbackImage || myLocalFeedbackImage()"
-            [alt]="(f.userName || 'Anonymous') + ' feedback'"
-            loading="lazy"
-            class="mt-3 w-40 h-40 object-cover rounded-lg border border-gray-200" />
-          </ng-container>
           <button *ngIf="selectedImage()" type="button" (click)="selectedImage.set(null)"
                     class="text-sm text-red-500 hover:text-red-700 cursor-pointer">Remove</button>
           </div>
