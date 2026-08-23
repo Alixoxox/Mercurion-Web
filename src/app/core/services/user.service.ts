@@ -184,6 +184,5 @@ export class UserService {
           this.wishlistIds.set(current);
         },
       });
-      console.log(`Toggled wishlist for product ${productId}. Current wishlist:`, Array.from(this.wishlistIds()));
   }
 }
