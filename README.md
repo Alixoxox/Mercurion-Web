@@ -1,27 +1,88 @@
 # Mercurion-Web
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 16.2.16.
+Angular frontend for **Mercurion**, an e-commerce web app with a customer storefront and an admin panel, built on top of a Spring Boot backend.
 
-## Development server
+**Live demo:** [meezan-ecom.s3-website.ap-south-1.amazonaws.com](http://meezan-ecom.s3-website.ap-south-1.amazonaws.com/)
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.
+## Features
 
-## Code scaffolding
+**Storefront**
+- Browse products with search, category filters, and sorting
+- Paginated product listing and detailed product pages with ratings/feedback
+- Cart and checkout flow
+- Order history for logged-in users
+- Login / signup with JWT-based authentication
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+**Admin panel**
+- Dashboard, product management (create/edit, bulk import), and order management
+- Route guards restrict admin pages to users with the `ADMIN` role
 
-## Build
+**Core**
+- JWT auth via an HTTP interceptor that attaches the bearer token, handles token expiry, and surfaces toast notifications on auth errors
+- Route guards for authenticated and admin-only routes
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.
+## Tech Stack
 
-## Running unit tests
+- [Angular 16](https://angular.io/) (standalone components, lazy-loaded routes)
+- TypeScript, RxJS
+- [Tailwind CSS](https://tailwindcss.com/) + [Flowbite](https://flowbite.com/)
+- [ngx-toastr](https://github.com/scttcper/ngx-toastr) for notifications
+- [`@ngx-env/builder`](https://github.com/chihab/ngx-env) for environment variables at build time
 
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
+## Getting Started
 
-## Running end-to-end tests
+### Prerequisites
+- Node.js and npm
+- A running instance of the [Mercurion backend](#) (Spring Boot API)
 
-Run `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.
+### Setup
 
-## Further help
+```bash
+git clone https://github.com/Alixoxox/Mercurion-Web.git
+cd Mercurion-Web
+npm install
+```
 
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.
+Create a `.env` file in the project root pointing at your backend API:
+
+```
+NG_APP_API_URL=http://localhost:8080
+```
+
+### Development server
+
+```bash
+npm start
+```
+
+Navigate to `http://localhost:4200/`. The app reloads automatically on source changes.
+
+### Build
+
+```bash
+npm run build
+```
+
+Build artifacts are output to `dist/`.
+
+### Tests
+
+```bash
+npm test
+```
+
+Runs unit tests via Karma.
+
+## Project Structure
+
+```
+src/app/
+├── core/            # services, HTTP interceptors, route guards
+├── features/         # feature modules: auth, products, cart, checkout,
+│                      # history, contact, about, admin
+└── shared/           # shared components, models, form validators
+```
+
+## Deployment
+
+Pushes to `main` trigger a GitHub Actions workflow that builds the app and syncs the output to an S3 bucket configured for static website hosting, pointing the build at the backend host via `NG_APP_API_URL`.
